@@ -1,0 +1,882 @@
+/* ===== TEACHER: LOGIN ===== */
+#guruLoginScreen {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding: 0 16px 24px;
+}
+
+.guru-login-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 48px;
+  gap: 16px;
+  width: 100%;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.guru-login-icon { font-size: 64px; }
+.guru-login-title { font-size: 20px; font-weight: 800; }
+.guru-login-desc { font-size: 14px; color: var(--text-secondary); margin-bottom: 8px; }
+
+/* ===== TEACHER: DASHBOARD ===== */
+#guruDashboard {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding: 0 16px 100px;
+}
+
+.guru-class-tag {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--yellow);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* ===== TEACHER: ALERTS ===== */
+.guru-alert-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.guru-alert-card:active { transform: scale(0.99); }
+
+.guru-alert-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.guru-alert-title { font-size: 15px; font-weight: 700; }
+.guru-alert-toggle { font-size: 12px; color: var(--accent); font-weight: 600; }
+
+.guru-alert-summary {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.guru-alert-detail {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.alert-group { display: flex; flex-direction: column; gap: 6px; }
+
+.alert-group-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.alert-group-title.red { color: var(--red); }
+.alert-group-title.yellow { color: var(--yellow); }
+.alert-group-title.blue { color: var(--accent); }
+.alert-group-title.expelled { color: var(--red); }
+
+.alert-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.alert-item-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.alert-item-dot.red { background: var(--red); }
+.alert-item-dot.yellow { background: var(--yellow); }
+.alert-item-dot.blue { background: var(--accent); }
+.alert-item-dot.expelled { background: var(--red); }
+
+.alert-item-name { font-weight: 600; }
+.alert-item-meta {
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.guru-alert-empty {
+  text-align: center;
+  color: var(--green);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 0;
+}
+
+/* ===== TEACHER: MENU ===== */
+.guru-menu-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.guru-menu-btn {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.guru-menu-btn:active { transform: scale(0.96); background: var(--border); }
+
+/* ===== TEACHER: DATA EKSKUL KELAS ===== */
+#guruDataEkskulScreen {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding: 0 16px 100px;
+}
+
+.guru-student-card {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 10px;
+}
+
+.guru-student-card:active { transform: scale(0.98); }
+
+.guru-student-bg-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  opacity: 0.32;
+  z-index: 0;
+}
+
+.guru-student-bg-bar.no-ekstra { background: #64748b; }
+
+.bg-segment { height: 100%; transition: width 0.3s ease; }
+
+.guru-student-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  gap: 12px;
+}
+
+.guru-student-main { flex: 1; min-width: 0; }
+
+.guru-student-name {
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+}
+
+.guru-student-ekstra {
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 4px;
+  color: var(--accent);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+}
+
+.guru-student-ekstra.no-ekstra-text {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.guru-student-photo {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid var(--border);
+}
+
+.guru-student-photo-placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.guru-student-expand {
+  position: relative;
+  z-index: 1;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease, padding 0.35s ease;
+  padding: 0 16px;
+}
+
+.guru-student-card.expanded .guru-student-expand {
+  max-height: 600px;
+  padding: 0 16px 16px;
+}
+
+.attendance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.attendance-day {
+  border-radius: 8px;
+  padding: 6px 4px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+}
+
+.attendance-date { display: block; font-size: 9px; opacity: 0.9; margin-bottom: 2px; font-weight: 500; }
+.attendance-status { display: block; font-size: 11px; }
+
+/* ===== TEACHER: REKAP PENDAFTARAN ===== */
+#guruRekapScreen {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding: 0 16px 100px;
+}
+
+.guru-rekap-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.guru-rekap-item {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-left: 4px solid var(--border);
+  transition: all 0.15s;
+}
+
+.guru-rekap-item.accepted { border-left-color: var(--green); }
+.guru-rekap-item.pending  { border-left-color: var(--accent); }
+.guru-rekap-item.rejected { border-left-color: var(--yellow); }
+.guru-rekap-item.expelled { border-left-color: var(--red); }
+.guru-rekap-item.none     { border-left-color: #64748b; }
+
+.guru-rekap-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.guru-rekap-info { flex: 1; min-width: 0; }
+
+.guru-rekap-name {
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.guru-rekap-status {
+  font-size: 13px;
+  margin-top: 3px;
+  font-weight: 600;
+}
+
+.guru-rekap-status.accepted { color: var(--green); }
+.guru-rekap-status.pending  { color: var(--accent); }
+.guru-rekap-status.rejected { color: var(--yellow); }
+.guru-rekap-status.expelled { color: var(--red); }
+.guru-rekap-status.none     { color: var(--text-secondary); }
+
+/* ===== TEACHER: FAB ===== */
+.fab-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0;
+}
+
+.fab-main {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, var(--green), #059669);
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fab-main:active { transform: scale(0.92); }
+.fab-main.expanded { transform: rotate(45deg); }
+
+.fab-options {
+  display: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.fab-options.visible {
+  display: flex;
+  animation: slideUp 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fab-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.fab-option-label {
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 8px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  color: var(--text);
+}
+
+.fab-option-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.fab-option:active .fab-option-btn { transform: scale(0.9); background: var(--border); }
+
+/* ===== ADMIN: FAB ===== */
+.fab-admin {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 150;
+  transition: all 0.2s;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+.fab-admin:active { transform: scale(0.9); background: var(--border); }
+
+/* ===== ADMIN: DASHBOARD ===== */
+#adminDashboard {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding: 0 16px 100px;
+}
+
+.admin-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.admin-stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px 8px;
+  text-align: center;
+}
+
+.admin-stat-value {
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 4px;
+  color: var(--accent);
+}
+
+.admin-stat-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+/* ===== ADMIN: MENU ===== */
+.admin-menu-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.admin-menu-btn {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-menu-btn:active { transform: scale(0.97); background: var(--border); }
+
+.admin-menu-btn.danger {
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.admin-menu-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 12px;
+  background: var(--red);
+  color: white;
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-menu-btn:not(.danger) .admin-menu-badge { background: var(--accent); }
+
+/* ===== ADMIN: LIST SCREENS ===== */
+.admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 16px 100px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.admin-list-item {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 64px;
+}
+
+.admin-list-item:active { transform: scale(0.98); background: var(--border); }
+
+.admin-list-item.danger { border-left: 4px solid var(--red); }
+.admin-list-item.warning { border-left: 4px solid var(--yellow); }
+.admin-list-item.info { border-left: 4px solid var(--accent); }
+
+.admin-list-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.admin-list-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+
+.admin-list-name {
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.admin-list-meta { font-size: 12px; color: var(--text-secondary); }
+
+.admin-list-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.admin-list-badge.danger { background: rgba(239,68,68,0.12); color: var(--red); }
+.admin-list-badge.warning { background: rgba(245,158,11,0.12); color: var(--yellow); }
+.admin-list-badge.info { background: rgba(59,130,246,0.12); color: var(--accent); }
+
+.admin-list-count {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--accent);
+  flex-shrink: 0;
+  min-width: 40px;
+  text-align: right;
+}
+
+.admin-class-tag {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--accent);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  margin: 0 16px 16px;
+  width: calc(100% - 32px);
+  box-sizing: border-box;
+}
+
+/* Admin screens */
+#adminBerisikoScreen,
+#adminPerKelasScreen,
+#adminKelasDetailScreen,
+#adminPerEkskulScreen,
+#adminEkstraDetailScreen {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  width: 100vw;
+  max-width: 100vw;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* No data */
+.admin-empty {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 40px 16px;
+  font-size: 14px;
+}
+
+/* Prevent horizontal scroll */
+#adminDashboard {
+  width: 100vw;
+  max-width: 100vw;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+/* ===== TEACHER: REKAP DENDA ===== */
+#guruRekapDendaScreen {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding: 0 16px 100px;
+}
+
+.guru-debt-card {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 10px;
+  border-left: 4px solid var(--border);
+}
+
+.guru-debt-card:active { transform: scale(0.98); }
+.guru-debt-card.has-debt { border-left-color: var(--red); }
+.guru-debt-card.no-debt { border-left-color: var(--green); }
+
+.guru-debt-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  gap: 12px;
+}
+
+.guru-debt-main { flex: 1; min-width: 0; }
+
+.guru-debt-name {
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.guru-debt-amount {
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.guru-debt-amount.has-debt { color: var(--red); }
+.guru-debt-amount.no-debt { color: var(--green); }
+
+.guru-debt-badge {
+  padding: 8px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.guru-debt-badge.has-debt {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--red);
+}
+
+.guru-debt-badge.no-debt {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--green);
+}
+
+.guru-debt-expand {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease, padding 0.35s ease;
+  padding: 0 16px;
+}
+
+.guru-debt-card.expanded .guru-debt-expand {
+  max-height: 300px;
+  padding: 0 16px 16px;
+}
+
+.debt-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.debt-detail-item {
+  background: rgba(255,255,255,0.03);
+  border-radius: 12px;
+  padding: 14px 8px;
+  text-align: center;
+}
+
+.debt-detail-value {
+  font-size: 16px;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.debt-detail-value.red { color: var(--red); }
+.debt-detail-value.green { color: var(--green); }
+.debt-detail-value.blue { color: var(--accent); }
+
+.debt-detail-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+/* ===== TEACHER: SYARAT KHUSUS ===== */
+#guruSyaratScreen {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding: 0 16px 100px;
+}
+
+.guru-syarat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.guru-syarat-item {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-left: 4px solid var(--border);
+}
+
+.guru-syarat-item.sudah { border-left-color: var(--green); }
+.guru-syarat-item.belum { border-left-color: var(--red); }
+
+.guru-syarat-info { flex: 1; min-width: 0; }
+
+.guru-syarat-name {
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.guru-syarat-ekstra {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.guru-syarat-badge {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.guru-syarat-badge.sudah {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--green);
+}
+
+.guru-syarat-badge.belum {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--red);
+}
+
+/* ===== TEACHER: VALIDATION READY ===== */
+.guru-validation-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-left: 4px solid var(--green);
+}
+
+.guru-validation-card:active { transform: scale(0.99); }
+
+.guru-validation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.guru-validation-title { font-size: 15px; font-weight: 700; color: var(--green); }
+
+.guru-validation-count {
+  min-width: 24px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 12px;
+  background: var(--green);
+  color: white;
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.guru-validation-summary {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.guru-validation-detail {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.alert-item-dot.green { background: var(--green); }
