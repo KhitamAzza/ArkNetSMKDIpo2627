@@ -524,26 +524,37 @@ function renderPeminatan(list) {
   });
 }
 
-function showGantiEkskul() {
+async function showGantiEkskul() {
   if (!currentStudent) return;
-  if (studentStatusData?.studentStatus !== "pending") {
-    showStudentToast("Hanya bisa ganti saat menunggu konfirmasi", "error");
+
+  const status = studentStatusData?.studentStatus;
+
+  if (status === "accepted") {
+    showStudentToast("Kamu sudah diterima di ekskul", "info");
+    return;
+  }
+  if (status === "exhausted") {
+    showStudentToast("Kesempatan pendaftaran sudah habis", "error");
     return;
   }
 
+  // Allow: pending, rejected_once, expelled
   dashboardScreen.style.display = "none";
-  pilihEkskulScreen.style.display = "flex";
+  pilihEkskulListScreen.style.display = "flex";
 
   showStudentLoading(true);
   try {
-    fetch(API_URL + "?action=getEkstraList")
-      .then(res => res.json())
-      .then(data => {
-        if (data.status === "ok") {
-          ekstraOptions = data.data || [];
-          renderEkstraList();
-        }
-      });
+    const [ekstraRes, countsRes] = await Promise.all([
+      fetch(API_URL + "?action=getEkstraList"),
+      fetch(API_URL + "?action=getEkstraWithCounts")
+    ]);
+    const ekstraData = await ekstraRes.json();
+    const countsData = await countsRes.json();
+
+    if (ekstraData.status === "ok" && countsData.status === "ok") {
+      ekstraOptions = ekstraData.data || [];
+      renderEkstraListView(ekstraOptions, countsData.data || []);
+    }
   } catch (err) {
     showStudentToast("Gagal memuat daftar ekskul", "error");
   }
