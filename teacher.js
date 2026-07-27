@@ -195,10 +195,9 @@ function renderGuruAlertSummary(data) {
   const c = data.counts || {};
   const parts = [];
 
-  if (c.belumDaftar > 0) parts.push(`🔴 ${c.belumDaftar} belum daftar ekskul`);
+  if (c.tidakMemilikiEkskul > 0) parts.push(`🔴 ${c.tidakMemilikiEkskul} tidak memiliki ekskul`);
   if (c.alphaTinggi > 0) parts.push(`🟡 ${c.alphaTinggi} Alpha tinggi`);
   if (c.pendingLama > 0) parts.push(`🔵 ${c.pendingLama} menunggu konfirmasi`);
-    if (c.expelled > 0) parts.push(`🔴 ${c.expelled} dikeluarkan`);
 
   if (parts.length === 0) {
     summary.innerHTML = `<span style="color:var(--green);">✓ Semua siswa dalam kondisi baik</span>`;
@@ -229,23 +228,27 @@ function renderGuruAlertDetail(data) {
   detail.innerHTML = "";
 
   const a = data.alerts || {};
-  const hasAny = a.belumDaftar?.length || a.alphaTinggi?.length || a.pendingLama?.length;
+  const hasAny = a.tidakMemilikiEkskul?.length || a.alphaTinggi?.length || a.pendingLama?.length;
 
   if (!hasAny) {
     detail.innerHTML = `<div class="guru-alert-empty">✓ Tidak ada masalah saat ini</div>`;
     return;
   }
 
-  if (a.belumDaftar?.length > 0) {
+  if (a.tidakMemilikiEkskul?.length > 0) {
     const g = document.createElement("div");
     g.className = "alert-group";
-    g.innerHTML = `<div class="alert-group-title red">Belum Daftar Ekskul (${a.belumDaftar.length})</div>`;
-    a.belumDaftar.forEach(s => {
+    g.innerHTML = `<div class="alert-group-title red">Tidak Memiliki Ekskul (${a.tidakMemilikiEkskul.length})</div>`;
+    a.tidakMemilikiEkskul.forEach(s => {
+      let meta = "Belum mendaftar";
+      if (s.type === "rejected") meta = "Ditolak" + (s.ekstra ? " dari " + s.ekstra : "");
+      if (s.type === "expelled") meta = "Dikeluarkan" + (s.ekstra ? " dari " + s.ekstra : "");
+
       g.innerHTML += `
         <div class="alert-item">
           <div class="alert-item-dot red"></div>
           <div class="alert-item-name">${s.nama}</div>
-          <div class="alert-item-meta">Belum mendaftar</div>
+          <div class="alert-item-meta">${meta}</div>
         </div>`;
     });
     detail.appendChild(g);
@@ -274,20 +277,6 @@ function renderGuruAlertDetail(data) {
       g.innerHTML += `
         <div class="alert-item">
           <div class="alert-item-dot blue"></div>
-          <div class="alert-item-name">${s.nama}</div>
-          <div class="alert-item-meta">${s.ekstra}</div>
-        </div>`;
-    });
-    detail.appendChild(g);
-  }
-    if (a.expelled?.length > 0) {
-    const g = document.createElement("div");
-    g.className = "alert-group";
-    g.innerHTML = `<div class="alert-group-title expelled">Dikeluarkan dari Ekskul (${a.expelled.length})</div>`;
-    a.expelled.forEach(s => {
-      g.innerHTML += `
-        <div class="alert-item">
-          <div class="alert-item-dot expelled"></div>
           <div class="alert-item-name">${s.nama}</div>
           <div class="alert-item-meta">${s.ekstra}</div>
         </div>`;
@@ -450,13 +439,11 @@ async function shareRekapWA() {
     const students = data.data || [];
     const accepted = students.filter(s => s.status === "accepted");
     const pending  = students.filter(s => s.status === "pending");
-    const rejected = students.filter(s => s.status === "rejected");
-    const expelled = students.filter(s => s.status === "expelled");
-    const none     = students.filter(s => s.status === "none");
+    const tidakMemiliki = students.filter(s => s.status === "none" || s.status === "rejected" || s.status === "expelled");
 
     let msg = `*Rekap pendaftaran ekskul kelas ${currentGuru.kelas}*\n\n`;
 
-        if (accepted.length) {
+    if (accepted.length) {
       msg += `*Siswa sudah diterima ekskul*\n`;
       accepted.forEach(s => msg += `${s.nama} - ${s.ekstra}\n`);
       msg += `\n`;
@@ -466,19 +453,12 @@ async function shareRekapWA() {
       pending.forEach(s => msg += `${s.nama} - ${s.ekstra}\n`);
       msg += `\n`;
     }
-    if (rejected.length) {
-      msg += `*Siswa ditolak ekskul*\n`;
-      rejected.forEach(s => msg += `${s.nama} - ${s.ekstra}\n`);
-      msg += `\n`;
-    }
-    if (expelled.length) {
-      msg += `*Siswa dikeluarkan ekskul*\n`;
-      expelled.forEach(s => msg += `${s.nama} - ${s.ekstra}\n`);
-      msg += `\n`;
-    }
-    if (none.length) {
-      msg += `*Siswa belum memilih ekskul*\n`;
-      none.forEach(s => msg += `${s.nama}\n`);
+    if (tidakMemiliki.length) {
+      msg += `*Siswa tidak memiliki ekskul*\n`;
+      tidakMemiliki.forEach(s => {
+        const label = s.status === "rejected" ? "(ditolak)" : (s.status === "expelled" ? "(dikeluarkan)" : "(belum mendaftar)");
+        msg += `${s.nama} ${label}\n`;
+      });
       msg += `\n`;
     }
 
