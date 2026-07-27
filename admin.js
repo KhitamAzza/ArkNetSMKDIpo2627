@@ -181,10 +181,10 @@ function renderAdminKelasList() {
     div.className = "admin-list-item";
     div.onclick = () => showAdminKelasDetail(c);
 
-    div.innerHTML = `
+        div.innerHTML = `
       <div class="admin-list-info">
         <div class="admin-list-name">${c.kelas}</div>
-        <div class="admin-list-meta">${c.total} siswa • ${c.noEkskul} belum daftar</div>
+        <div class="admin-list-meta">${c.total} siswa • ${c.noEkskul} Tidak memiliki ekskul</div>
       </div>
       <div class="admin-list-count">${c.total}</div>
     `;
@@ -239,11 +239,9 @@ function renderAdminKelasDetailList(students) {
     const div = document.createElement("div");
     div.className = "admin-list-item " + (s.status === "none" ? "danger" : s.status === "accepted" ? "info" : "warning");
 
-    const statusText = s.status === "accepted" ? "Diterima"
+        const statusText = s.status === "accepted" ? "Diterima"
                      : s.status === "pending" ? "Menunggu"
-                     : s.status === "rejected" ? "Ditolak"
-                     : s.status === "expelled" ? "Dikeluarkan"
-                     : "Belum Daftar";
+                     : "Tidak memiliki ekskul";
 
     div.innerHTML = `
       <div class="admin-list-avatar">👤</div>
