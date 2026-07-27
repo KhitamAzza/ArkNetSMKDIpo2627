@@ -56,6 +56,8 @@ function backToAdminDashboard() {
 // ADMIN: DASHBOARD
 // ============================================
 let adminDataCache = null;
+let currentBerisikoTab = 'all';
+let berisikoSearchQuery = '';
 
 async function loadAdminDashboard() {
   showStudentLoading(true);
@@ -123,7 +125,14 @@ function updateAdminBadges(data) {
 function showAdminBerisiko() {
   adminDashboard.style.display = "none";
   adminBerisikoScreen.style.display = "flex";
-  renderAdminBerisikoList();
+  
+  // Reset to default
+  currentBerisikoTab = 'all';
+  berisikoSearchQuery = '';
+  const searchInput = document.getElementById('berisikoSearch');
+  if (searchInput) searchInput.value = '';
+  
+  setBerisikoTab('all');
 }
 
 function renderAdminBerisikoList() {
@@ -135,7 +144,35 @@ function renderAdminBerisikoList() {
     return;
   }
 
-  adminDataCache.alerts.forEach(a => {
+  // 1. Filter by tab
+  let filtered = adminDataCache.alerts.filter(a => {
+    if (currentBerisikoTab === 'all') return true;
+    if (currentBerisikoTab === 'noekskul') {
+      return a.reason.includes('Tidak memiliki ekskul') ||
+             a.reason.includes('Dikeluarkan') ||
+             a.reason.includes('Ditolak');
+    }
+    if (currentBerisikoTab === 'alpha') {
+      return a.reason.includes('Alpha');
+    }
+    return true;
+  });
+
+  // 2. Filter by search
+  if (berisikoSearchQuery) {
+    const q = berisikoSearchQuery;
+    filtered = filtered.filter(a =>
+      a.nama.toLowerCase().includes(q) ||
+      a.kelas.toLowerCase().includes(q)
+    );
+  }
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="admin-empty">Tidak ada data pada kategori ini</div>`;
+    return;
+  }
+
+  filtered.forEach(a => {
     const div = document.createElement("div");
     div.className = "admin-list-item " + a.level;
 
@@ -150,7 +187,7 @@ function renderAdminBerisikoList() {
       <div class="admin-list-avatar">👤</div>
       <div class="admin-list-info">
         <div class="admin-list-name">${a.nama}</div>
-        <div class="admin-list-meta">${meta}</div>
+        <div class="admin-list-meta">${a.kelas} • ${meta}</div>
       </div>
       <div class="admin-list-badge ${badgeClass}">${badgeText}</div>
     `;
@@ -158,6 +195,25 @@ function renderAdminBerisikoList() {
   });
 }
 
+function setBerisikoTab(tab) {
+  currentBerisikoTab = tab;
+
+  document.querySelectorAll('#adminBerisikoScreen .admin-tab').forEach(btn => {
+    const isActive = btn.dataset.tab === tab;
+    btn.style.background = isActive ? 'var(--accent)' : 'transparent';
+    btn.style.color = isActive ? '#fff' : 'var(--text-secondary)';
+    btn.style.border = isActive ? 'none' : '1px solid var(--border)';
+    btn.style.fontWeight = isActive ? '600' : '500';
+  });
+
+  renderAdminBerisikoList();
+}
+
+function filterBerisiko() {
+  const input = document.getElementById('berisikoSearch');
+  berisikoSearchQuery = input ? input.value.trim().toLowerCase() : '';
+  renderAdminBerisikoList();
+}
 // ============================================
 // ADMIN: PER KELAS
 // ============================================
