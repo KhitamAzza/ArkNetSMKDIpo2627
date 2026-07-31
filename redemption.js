@@ -56,8 +56,9 @@ async function loadRedemptionStudents() {
     const data = await res.json();
 
     if (data.status === "ok") {
-      renderRedemptionBanner(data.hasSubmittedToday);
-      renderRedemptionList(data.students || [], data.hasSubmittedToday);
+      const hasReachedLimit = data.hasReachedLimit || false;
+      renderRedemptionBanner(hasReachedLimit);
+      renderRedemptionList(data.students || [], hasReachedLimit, data.submissionCount, data.maxMemberiPoin);
     } else {
       showStudentToast(data.message || "Gagal memuat data", "error");
     }
@@ -67,11 +68,11 @@ async function loadRedemptionStudents() {
   showStudentLoading(false);
 }
 
-function renderRedemptionBanner(hasSubmitted) {
-  redemptionBanner.style.display = hasSubmitted ? "block" : "none";
+function renderRedemptionBanner(hasReachedLimit) {
+  redemptionBanner.style.display = hasReachedLimit ? "block" : "none";
 }
 
-function renderRedemptionList(students, hasSubmittedToday) {
+function renderRedemptionList(students, hasReachedLimit, submissionCount, maxMemberiPoin) {
   const container = redemptionStudentList;
   container.innerHTML = "";
 
@@ -84,7 +85,10 @@ function renderRedemptionList(students, hasSubmittedToday) {
     const card = document.createElement("div");
     card.className = "redemption-card";
 
-    const disabled = hasSubmittedToday ? "disabled" : "";
+    const disabled = hasReachedLimit ? "disabled" : "";
+    const btnText = hasReachedLimit
+      ? `✅ Batas tercapai (${submissionCount || 0}/${maxMemberiPoin || 1})`
+      : "Tambah Poin";
 
     card.innerHTML = `
       <div class="redemption-card-main">
@@ -94,14 +98,13 @@ function renderRedemptionList(students, hasSubmittedToday) {
           <div class="redemption-card-point">${s.point} poin</div>
         </div>
         <button class="redemption-card-btn" onclick="openRedemptionModal('${s.nama}', '${s.kelas}', ${s.point})" ${disabled}>
-          ${hasSubmittedToday ? "✅ Selesai" : "Tambah Poin"}
+          ${btnText}
         </button>
       </div>
     `;
     container.appendChild(card);
   });
 }
-
 // ============================================
 // REDEMPTION: MODAL
 // ============================================
