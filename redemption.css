@@ -162,11 +162,17 @@
 }
 
 .redemption-slider-label {
-  font-size: 16px;
-  font-weight: 800;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 60px;
   text-align: center;
-  transition: color 0.2s;
-  min-height: 24px;
+  transition: color 0.15s;
+  line-height: 1.1;
+  /* subtle shadow so light colors don't vanish on light backgrounds */
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
 }
 
 .redemption-slider {
@@ -219,19 +225,61 @@
   );
 }
 
-.redemption-slider-marks {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  color: var(--text-secondary);
-  font-weight: 600;
-  padding: 0 2px;
+.redemption-slider-number {
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+.redemption-slider-text {
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.95;
 }
 
 /* Modal textarea tweaks */
 #redemptionDesc {
   min-height: 80px;
   font-size: 15px;
+}
+.redemption-slider-marks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  padding: 0 2px;
+  margin-top: 4px;
+}
+/* ===== REDEMPTION: SEARCH BAR ===== */
+.redemption-search-wrap {
+  padding: 0 16px 12px;
+}
+
+.redemption-search {
+  width: 100%;
+  padding: 12px 14px 12px 40px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 14px center;
+  background-size: 18px;
+}
+
+.redemption-search::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.redemption-search:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
 }
 
 /* ===== POINT DETAIL ===== */
