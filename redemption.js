@@ -56,9 +56,10 @@ async function loadRedemptionStudents() {
     const data = await res.json();
 
     if (data.status === "ok") {
+      redemptionAllStudents = data.students || [];   // ← cache
       const hasReachedLimit = data.hasReachedLimit || false;
       renderRedemptionBanner(hasReachedLimit);
-      renderRedemptionList(data.students || [], hasReachedLimit, data.submissionCount, data.maxMemberiPoin);
+      renderRedemptionList(redemptionAllStudents, hasReachedLimit, data.submissionCount, data.maxPointSubmit);
     } else {
       showStudentToast(data.message || "Gagal memuat data", "error");
     }
@@ -67,17 +68,36 @@ async function loadRedemptionStudents() {
   }
   showStudentLoading(false);
 }
+// Filter locally without hitting the server again
+function filterRedemptionList(query) {
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? redemptionAllStudents.filter(s => s.nama.toLowerCase().includes(q))
+    : redemptionAllStudents;
+
+  // Re-use the same limit state from the last load
+  const banner = document.getElementById("redemptionBanner");
+  const hasReachedLimit = banner && banner.style.display === "block";
+  const countEl = document.getElementById("redemptionCountBadge"); // optional counter
+  const maxVal = appConfig?.maxPointSubmit || 1;
+
+  renderRedemptionList(filtered, hasReachedLimit, countEl ? countEl.dataset.count : 0, maxVal);
+}
 
 function renderRedemptionBanner(hasReachedLimit) {
   redemptionBanner.style.display = hasReachedLimit ? "block" : "none";
 }
 
-function renderRedemptionList(students, hasReachedLimit, submissionCount, maxMemberiPoin) {
+function renderRedemptionList(students, hasReachedLimit, submissionCount, maxPointSubmit) {
   const container = redemptionStudentList;
   container.innerHTML = "";
 
   if (students.length === 0) {
-    container.innerHTML = `<div class="admin-empty">✓ Tidak ada siswa dengan minus poin</div>`;
+    const searchVal = redemptionSearchInput?.value.trim();
+    const msg = searchVal
+      ? `Tidak ada siswa bernama “${searchVal}”`
+      : "✓ Tidak ada siswa dengan minus poin";
+    container.innerHTML = `<div class="admin-empty">${msg}</div>`;
     return;
   }
 
@@ -87,7 +107,7 @@ function renderRedemptionList(students, hasReachedLimit, submissionCount, maxMem
 
     const disabled = hasReachedLimit ? "disabled" : "";
     const btnText = hasReachedLimit
-      ? `✅ Batas tercapai (${submissionCount || 0}/${maxMemberiPoin || 1})`
+      ? `✅ Batas tercapai (${submissionCount || 0}/${maxPointSubmit || 1})`
       : "Tambah Poin";
 
     card.innerHTML = `
@@ -105,6 +125,7 @@ function renderRedemptionList(students, hasReachedLimit, submissionCount, maxMem
     container.appendChild(card);
   });
 }
+
 // ============================================
 // REDEMPTION: MODAL
 // ============================================
@@ -117,11 +138,17 @@ function openRedemptionModal(nama, kelas, point) {
   selectedRedemptionStudent = { nama, kelas, point };
   redemptionModalName.textContent = nama;
   redemptionModalClass.textContent = kelas + " • " + point + " poin";
-  redemptionSlider.value = 3;
+
+  const maxVal = appConfig?.maxRedemptionPoint || 5;
+  redemptionSlider.max = maxVal;
+  redemptionSlider.value = Math.min(3, maxVal);
+
   redemptionDesc.value = "";
   document.getElementById("redemptionCharCount").textContent = "0";
+
+  renderSliderMarks();   // ← build bottom numbers dynamically
   updateSliderLabel();
-  redemptionSubmitBtn.disabled = false; // ← ADD THIS
+  redemptionSubmitBtn.disabled = false;
   redemptionModal.classList.add("visible");
 }
 
@@ -131,40 +158,61 @@ function closeRedemptionModal() {
   redemptionSubmitBtn.disabled = false; // ← ADD THIS
 }
 
+function renderSliderMarks() {
+  const container = document.querySelector(".redemption-slider-marks");
+  if (!container) return;
+
+  const maxVal = appConfig?.maxRedemptionPoint || 5;
+  container.innerHTML = "";
+
+  for (let i = 1; i <= maxVal; i++) {
+    const span = document.createElement("span");
+    span.textContent = i;
+    container.appendChild(span);
+  }
+}
+
+const REDEMPTION_PALETTE = [
+  "#0C7114", "#177D1A", "#239921", "#2FB528", "#45CA3F",
+  "#66D95F", "#88E680", "#ADEFA6", "#D3F7CF", "#F5FDF4"
+];
+// const REDEMPTION_PALETTE = [
+//   "#A50026",
+//   "#D73027",
+//   "#F46D43",
+//   "#FDAE61",
+//   "#FEE08B",
+//   "#D9EF8B",
+//   "#A6D96A",
+//   "#66BD63",
+//   "#1A9850",
+//   "#006837"
+// ]
+
 function updateSliderLabel() {
   const val = Number(redemptionSlider.value);
-  const labels = {
-    1: "Sangat mudah",
-    2: "Mudah",
-    3: "Cukup",
-    4: "Membantu",
-    5: "Sangat membantu"
-  };
+  const maxVal = appConfig?.maxRedemptionPoint || 5;
 
-  const colors = {
-    1: "#ef4444",   // red
-    2: "#f97316",   // orange
-    3: "#eab308",   // yellow
-    4: "#84cc16",   // lime
-    5: "#10b981"    // green
-  };
+  // Slice palette to match max (5 uses first 5, 10 uses all 10, etc.)
+  const activeColors = REDEMPTION_PALETTE.slice(0, maxVal);
+  const color = activeColors[val - 1] || REDEMPTION_PALETTE[0];
 
-  const color = colors[val];
-  const label = labels[val];
+  // Spread the 5 text labels across the current max range
+  const labels = ["Sangat mudah", "Mudah", "Cukup", "Membantu", "Sangat membantu"];
+  const labelIndex = Math.min(Math.floor(((val - 1) / maxVal) * 5), 4);
+  const label = labels[labelIndex];
 
-  redemptionSliderLabel.textContent = label;
+  redemptionSliderLabel.innerHTML = `
+    <span class="redemption-slider-number">${val}</span>
+    <span class="redemption-slider-text">${label}</span>
+  `;
   redemptionSliderLabel.style.color = color;
 
-  // Update slider track fill and thumb color
-  const percent = ((val - 1) / 4) * 100;
+  // Track fill uses real max
+  const percent = maxVal === 1 ? 100 : ((val - 1) / (maxVal - 1)) * 100;
   redemptionSlider.style.setProperty("--slider-color", color);
   redemptionSlider.style.setProperty("--value-percent", percent + "%");
 }
-
-redemptionDesc.addEventListener("input", () => {
-  document.getElementById("redemptionCharCount").textContent = redemptionDesc.value.length;
-});
-
 // ============================================
 // REDEMPTION: SUBMIT
 // ============================================
@@ -211,4 +259,11 @@ async function submitRedemption() {
   }
 
   showStudentLoading(false);
+}
+// Search box listener
+const redemptionSearchInput = document.getElementById("redemptionSearch");
+if (redemptionSearchInput) {
+  redemptionSearchInput.addEventListener("input", (e) => {
+    filterRedemptionList(e.target.value);
+  });
 }
