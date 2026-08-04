@@ -60,6 +60,7 @@ let guruClassData = [];
 
 let currentMinusPoint = null;
 let currentRedemptionGuru = null;
+let redemptionAllStudents = [];   // ← cache for local filtering
 
 // ===== DOM REFS =====
 const landingScreen     = document.getElementById("landingScreen");
