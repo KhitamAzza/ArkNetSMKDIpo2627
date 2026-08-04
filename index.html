@@ -527,6 +527,15 @@
   <div class="redemption-banner" id="redemptionBanner" style="display:none;">
     ✅ Anda sudah memberi nilai hari ini
   </div>
+  <div class="redemption-search-wrap">
+  <input
+    type="text"
+    id="redemptionSearch"
+    class="redemption-search"
+    placeholder="Cari nama siswa..."
+    autocomplete="off"
+  />
+</div>
   <div class="redemption-list" id="redemptionStudentList"></div>
 </div>
 
@@ -543,10 +552,7 @@
       
       <div class="redemption-slider-wrap">
         <div class="redemption-slider-label" id="redemptionSliderLabel">Cukup</div>
-        <input type="range" id="redemptionSlider" class="redemption-slider" min="1" max="5" value="3" oninput="updateSliderLabel()">
-        <div class="redemption-slider-marks">
-          <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
-        </div>
+        <input type="range" id="redemptionSlider" class="redemption-slider" min="1" max="10" value="3" oninput="updateSliderLabel()">
       </div>
       
       <div class="alasan-label">Apa yang dibantu siswa?</div>
