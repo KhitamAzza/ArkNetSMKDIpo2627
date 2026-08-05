@@ -144,8 +144,7 @@ function openRedemptionModal(nama, kelas, point) {
   redemptionSlider.value = Math.min(3, maxVal);
 
   redemptionDesc.value = "";
-  document.getElementById("redemptionCharCount").textContent = "0";
-
+  
   renderSliderMarks();   // ← build bottom numbers dynamically
   updateSliderLabel();
   redemptionSubmitBtn.disabled = false;
