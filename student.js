@@ -214,7 +214,7 @@ function renderDashboardData(data) {
   renderDebtCard(data.debt);
 
   // --- MINUS POINT ---
-  updatePointUI(data.minusPoint);
+  updatePointUI(data.sisaPoin);
 
     // --- VALIDATION NOTICE ---
     updateValidationNotice();
@@ -854,15 +854,21 @@ async function showPointDetail() {
 }
 
 function renderPointDetail(data) {
-  const sisa = data.minusPoint || 0;
-  const total = data.totalMinus || 0;
+  const rawMinus = data.minusPoint || 0;        // Column C
   const redemptionTotal = data.redemptionTotal || 0;
+  const sisa = data.sisaPoin || 0;              // Column D (formula)
 
-  pointDetailBig.textContent = sisa > 0 ? "+" + sisa : String(sisa);
-  pointDetailBig.style.color = sisa < 0 ? "var(--red)" : (sisa > 0 ? "var(--green)" : "var(--text-secondary)");
+  const minusEl = document.getElementById("pointCompareMinus");
+  const plusEl = document.getElementById("pointComparePlus");
+  const netValue = document.getElementById("pointNetValue");
 
-  pointDetailAlpha.textContent = "Total minus poin: " + total;
-  pointDetailRedemption.textContent = "Total penebusan: +" + redemptionTotal + " poin";
+  if (minusEl) minusEl.textContent = String(rawMinus);
+  if (plusEl) plusEl.textContent = "+" + redemptionTotal;
+
+  if (netValue) {
+    netValue.textContent = sisa > 0 ? "+" + sisa : String(sisa);
+    netValue.className = sisa < 0 ? "point-net-minus" : (sisa > 0 ? "point-net-plus" : "");
+  }
 }
 
 function renderPointHistory(redemptions) {
