@@ -176,30 +176,29 @@ const REDEMPTION_PALETTE = [
   "#0C7114", "#177D1A", "#239921", "#2FB528", "#45CA3F",
   "#66D95F", "#88E680", "#ADEFA6", "#D3F7CF", "#F5FDF4"
 ];
-// const REDEMPTION_PALETTE = [
-//   "#A50026",
-//   "#D73027",
-//   "#F46D43",
-//   "#FDAE61",
-//   "#FEE08B",
-//   "#D9EF8B",
-//   "#A6D96A",
-//   "#66BD63",
-//   "#1A9850",
-//   "#006837"
-// ]
 
 function updateSliderLabel() {
   const val = Number(redemptionSlider.value);
   const maxVal = appConfig?.maxRedemptionPoint || 5;
 
-  // Slice palette to match max (5 uses first 5, 10 uses all 10, etc.)
+  // Color from palette (slice to max length)
   const activeColors = REDEMPTION_PALETTE.slice(0, maxVal);
   const color = activeColors[val - 1] || REDEMPTION_PALETTE[0];
 
-  // Spread the 5 text labels across the current max range
+  // 5 text labels
   const labels = ["Sangat mudah", "Mudah", "Cukup", "Membantu", "Sangat membantu"];
-  const labelIndex = Math.min(Math.floor(((val - 1) / maxVal) * 5), 4);
+
+  let labelIndex;
+  if (maxVal <= 5) {
+    // 1-to-1 mapping: value 1→label 0, value 2→label 1, etc.
+    labelIndex = Math.min(val - 1, 4);
+  } else {
+    // Spread 5 labels evenly across the bigger range
+    // max=10 → 2 values per label
+    // max=7  → distributes as 2,1,2,1,1
+    labelIndex = Math.min(Math.floor((val - 1) * 5 / maxVal), 4);
+  }
+
   const label = labels[labelIndex];
 
   redemptionSliderLabel.innerHTML = `
@@ -208,7 +207,7 @@ function updateSliderLabel() {
   `;
   redemptionSliderLabel.style.color = color;
 
-  // Track fill uses real max
+  // Track fill
   const percent = maxVal === 1 ? 100 : ((val - 1) / (maxVal - 1)) * 100;
   redemptionSlider.style.setProperty("--slider-color", color);
   redemptionSlider.style.setProperty("--value-percent", percent + "%");
