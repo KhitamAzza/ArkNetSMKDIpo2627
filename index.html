@@ -557,8 +557,7 @@
       
       <div class="alasan-label">Apa yang dibantu siswa?</div>
       <textarea id="redemptionDesc" class="alasan-input" rows="3" maxlength="200" placeholder="Contoh: Membersihkan perpustakaan..."></textarea>
-      <div class="char-counter"><span id="redemptionCharCount">0</span>/200</div>
-    </div>
+      </div>
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closeRedemptionModal()">Batal</button>
       <button class="btn-primary" id="redemptionSubmitBtn" onclick="submitRedemption()">Kirim Nilai</button>
@@ -573,12 +572,22 @@
     <div class="header-greeting">Detail Poin</div>
     <div style="width:40px;"></div>
   </div>
-  <div class="point-detail-content">
-    <div class="point-detail-big" id="pointDetailBig">0</div>
-    <div class="point-detail-sub" id="pointDetailAlpha">0x Alpha</div>
-    <div class="point-detail-sub" id="pointDetailRedemption">0 poin penebusan</div>
-    
-    <div class="point-detail-history" id="pointDetailHistory">
+    <div class="point-detail-content">
+  <div class="point-compare">
+    <div class="point-compare-item minus">
+      <div class="point-compare-num" id="pointCompareMinus">0</div>
+      <div class="point-compare-label">Minus Poin</div>
+    </div>
+    <div class="point-compare-vs">vs</div>
+    <div class="point-compare-item plus">
+      <div class="point-compare-num" id="pointComparePlus">0</div>
+      <div class="point-compare-label">Poin Penebusan</div>
+    </div>
+  </div>
+  <div class="point-net" id="pointNetRow">
+    Sisa poin: <span id="pointNetValue">0</span>
+  </div>
+  <div class="point-detail-history" id="pointDetailHistory">
       <div class="denda-section-title">Riwayat Penebusan</div>
       <div class="denda-empty">Belum ada riwayat</div>
     </div>
