@@ -385,3 +385,122 @@
   line-height: 1.5;
   margin-top: 2px;
 }
+.point-breakdown-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: left;
+}
+
+.point-breakdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+  text-align: left;
+}
+
+.point-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.point-breakdown-row small {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.point-breakdown-val {
+  font-weight: 700;
+  color: var(--red);
+}
+
+.point-breakdown-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 15px;
+  font-weight: 800;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  margin-top: 4px;
+}
+
+.point-breakdown-empty {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 14px;
+  padding: 12px 0;
+}
+/* ===== POINT COMPARE: RED vs GREEN ===== */
+.point-compare {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  width: 100%;
+  margin: 12px 0 6px;
+}
+
+.point-compare-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.point-compare-num {
+  font-size: clamp(34px, 11vw, 52px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -1.5px;
+}
+
+.point-compare-item.minus .point-compare-num {
+  color: var(--red);
+}
+
+.point-compare-item.plus .point-compare-num {
+  color: var(--green);
+}
+
+.point-compare-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.point-compare-vs {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-secondary);
+  opacity: 0.35;
+  padding-bottom: 14px;
+}
+
+.point-net {
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 18px;
+}
+
+.point-net-minus {
+  color: var(--red);
+}
+
+.point-net-plus {
+  color: var(--green);
+}
