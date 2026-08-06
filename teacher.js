@@ -91,6 +91,7 @@ function renderTeacherDashboard(data) {
   if (c.pendingLama > 0) parts.push(`🔵 ${c.pendingLama} menunggu`);
   if (c.adaDenda > 0) parts.push(`💰 ${c.adaDenda} ada denda`);
   if (c.belumSyarat > 0) parts.push(`📋 ${c.belumSyarat} belum syarat`);
+  if (c.minusPointRendah > 0) parts.push(`📉 ${c.minusPointRendah} minus poin rendah`);
 
   if (parts.length === 0) {
     summary.innerHTML = `<span style="color:var(--green);">✓ Semua siswa dalam kondisi baik</span>`;
@@ -109,6 +110,7 @@ function renderTeacherDashboard(data) {
 // ============================================
 async function showDataEkskulKelas() {
   if (!currentGuru) return;
+  sessionStorage.removeItem("teacher_class_" + currentGuru.kelas);
   guruDashboard.style.display = "none";
   document.getElementById("guruDataEkskulScreen").style.display = "flex";
   document.getElementById("guruDataClassTag").textContent = "Wali Kelas " + currentGuru.kelas;
@@ -151,86 +153,104 @@ function renderDataEkskulList(students) {
     return;
   }
 
-  students.forEach(s => {
-    const hasEkskul = s.ekstra && s.ekstra !== "0";
-    const total = s.stats.totalDays || 0;
+  const BATCH = 6; // cards per frame (tweak 4–8 depending on device)
+  let idx = 0;
 
-    const card = document.createElement("div");
-    card.className = "guru-student-card";
-    card.onclick = () => card.classList.toggle("expanded");
+  function drawBatch() {
+    const frag = document.createDocumentFragment();
+    const end = Math.min(idx + BATCH, students.length);
 
-    // Background bar
-    let bgBar = "";
-    if (hasEkskul && total > 0) {
-      const hadirPct = ((s.stats.HADIR / total) * 100).toFixed(1);
-      const alphaPct = ((s.stats.ALPHA / total) * 100).toFixed(1);
-      const terlambatPct = ((s.stats.TERLAMBAT / total) * 100).toFixed(1);
-      const pagiPct = ((s.stats.PAGI / total) * 100).toFixed(1);
-      const otherPct = Math.max(0, (100 - parseFloat(hadirPct) - parseFloat(alphaPct) - parseFloat(terlambatPct) - parseFloat(pagiPct))).toFixed(1);
-
-      bgBar = `
-        <div class="guru-student-bg-bar">
-          ${s.stats.HADIR > 0 ? `<div class="bg-segment status-hadir" style="width:${hadirPct}%"></div>` : ''}
-          ${s.stats.ALPHA > 0 ? `<div class="bg-segment status-alpha" style="width:${alphaPct}%"></div>` : ''}
-          ${s.stats.TERLAMBAT > 0 ? `<div class="bg-segment status-terlambat" style="width:${terlambatPct}%"></div>` : ''}
-          ${s.stats.PAGI > 0 ? `<div class="bg-segment status-pagi" style="width:${pagiPct}%"></div>` : ''}
-          ${parseFloat(otherPct) > 0 ? `<div class="bg-segment status-other" style="width:${otherPct}%"></div>` : ''}
-        </div>
-      `;
-    } else {
-      bgBar = `<div class="guru-student-bg-bar no-ekstra"></div>`;
+    for (; idx < end; idx++) {
+      frag.appendChild(createStudentCard(students[idx]));
     }
+    container.appendChild(frag);
 
-    const photoHtml = s.foto
-      ? `<img class="guru-student-photo" src="${s.foto}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><div class="guru-student-photo-placeholder" style="display:none;">👤</div>`
-      : `<div class="guru-student-photo-placeholder">👤</div>`;
+    if (idx < students.length) {
+      requestAnimationFrame(drawBatch);
+    }
+  }
 
-    const ekstraHtml = hasEkskul
-      ? `<div class="guru-student-ekstra">${s.ekstra}</div>`
-      : `<div class="guru-student-ekstra no-ekstra-text">belum terdaftar di Ekskul</div>`;
+  drawBatch();
+}
 
-    // 3 BADGES
-    const badges = s.badges || { point: 0, dendaSisa: 0, syarat: "BELUM" };
-    const badgesHtml = `
-      <div class="guru-student-badges">
-        <span class="badge-point ${badges.point < 0 ? 'negative' : ''}">${badges.point} poin</span>
-        <span class="badge-denda ${badges.dendaSisa > 0 ? 'unpaid' : 'paid'}">${badges.dendaSisa > 0 ? 'Rp ' + badges.dendaSisa.toLocaleString('id-ID') : 'Lunas'}</span>
-        <span class="badge-syarat ${badges.syarat === 'SUDAH' ? 'done' : 'pending'}">${badges.syarat}</span>
+function createStudentCard(s) {
+  const hasEkskul = s.ekstra && s.ekstra !== "0";
+  const total = s.stats.totalDays || 0;
+
+  const card = document.createElement("div");
+  card.className = "guru-student-card";
+  card.onclick = () => card.classList.toggle("expanded");
+
+  // Background bar
+  let bgBar = "";
+  if (hasEkskul && total > 0) {
+    const hadirPct = ((s.stats.HADIR / total) * 100).toFixed(1);
+    const alphaPct = ((s.stats.ALPHA / total) * 100).toFixed(1);
+    const terlambatPct = ((s.stats.TERLAMBAT / total) * 100).toFixed(1);
+    const pagiPct = ((s.stats.PAGI / total) * 100).toFixed(1);
+    const otherPct = Math.max(0, (100 - parseFloat(hadirPct) - parseFloat(alphaPct) - parseFloat(terlambatPct) - parseFloat(pagiPct))).toFixed(1);
+
+    bgBar = `
+      <div class="guru-student-bg-bar">
+        ${s.stats.HADIR > 0 ? `<div class="bg-segment status-hadir" style="width:${hadirPct}%"></div>` : ''}
+        ${s.stats.ALPHA > 0 ? `<div class="bg-segment status-alpha" style="width:${alphaPct}%"></div>` : ''}
+        ${s.stats.TERLAMBAT > 0 ? `<div class="bg-segment status-terlambat" style="width:${terlambatPct}%"></div>` : ''}
+        ${s.stats.PAGI > 0 ? `<div class="bg-segment status-pagi" style="width:${pagiPct}%"></div>` : ''}
+        ${parseFloat(otherPct) > 0 ? `<div class="bg-segment status-other" style="width:${otherPct}%"></div>` : ''}
       </div>
     `;
+  } else {
+    bgBar = `<div class="guru-student-bg-bar no-ekstra"></div>`;
+  }
 
-    let attendanceHtml = "";
-    if (s.attendance && s.attendance.length > 0) {
-      attendanceHtml = s.attendance.map(day => {
-        let colorClass = "status-other";
-        const st = day.statusUpper;
-        if (st === "HADIR") colorClass = "status-hadir";
-        else if (st === "ALPHA") colorClass = "status-alpha";
-        else if (st === "TERLAMBAT") colorClass = "status-terlambat";
-        else if (st === "PAGI") colorClass = "status-pagi";
-        return `<div class="attendance-day ${colorClass}"><span class="attendance-date">${day.date}</span><span class="attendance-status">${day.status || '-'}</span></div>`;
-      }).join('');
-    } else {
-      attendanceHtml = `<div style="color:var(--text-secondary);font-size:12px;padding:8px 0;">Belum ada data kehadiran</div>`;
-    }
+  const photoHtml = s.foto
+    ? `<img class="guru-student-photo" src="${s.foto}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><div class="guru-student-photo-placeholder" style="display:none;">👤</div>`
+    : `<div class="guru-student-photo-placeholder">👤</div>`;
 
-    card.innerHTML = `
-      ${bgBar}
-      <div class="guru-student-content">
-        <div class="guru-student-main">
-          <div class="guru-student-name">${s.nama}</div>
-          ${ekstraHtml}
-          ${badgesHtml}
-        </div>
-        ${photoHtml}
+  const ekstraHtml = hasEkskul
+    ? `<div class="guru-student-ekstra">${s.ekstra}</div>`
+    : `<div class="guru-student-ekstra no-ekstra-text">belum terdaftar di Ekskul</div>`;
+
+  const badges = s.badges || { point: 0, dendaSisa: 0, syarat: "BELUM" };
+  const badgesHtml = `
+    <div class="guru-student-badges">
+      <span class="badge-point ${badges.point < 0 ? 'negative' : ''}">${badges.point} poin</span>
+      <span class="badge-denda ${badges.dendaSisa > 0 ? 'unpaid' : 'paid'}">${badges.dendaSisa > 0 ? 'Rp ' + badges.dendaSisa.toLocaleString('id-ID') : 'Lunas'}</span>
+      <span class="badge-syarat ${badges.syarat === 'SUDAH' ? 'done' : 'pending'}">${badges.syarat}</span>
+    </div>
+  `;
+
+  let attendanceHtml = "";
+  if (s.attendance && s.attendance.length > 0) {
+    attendanceHtml = s.attendance.map(day => {
+      let colorClass = "status-other";
+      const st = day.statusUpper;
+      if (st === "HADIR") colorClass = "status-hadir";
+      else if (st === "ALPHA") colorClass = "status-alpha";
+      else if (st === "TERLAMBAT") colorClass = "status-terlambat";
+      else if (st === "PAGI") colorClass = "status-pagi";
+      return `<div class="attendance-day ${colorClass}"><span class="attendance-date">${day.date}</span><span class="attendance-status">${day.status || '-'}</span></div>`;
+    }).join('');
+  } else {
+    attendanceHtml = `<div style="color:var(--text-secondary);font-size:12px;padding:8px 0;">Belum ada data kehadiran</div>`;
+  }
+
+  card.innerHTML = `
+    ${bgBar}
+    <div class="guru-student-content">
+      <div class="guru-student-main">
+        <div class="guru-student-name">${s.nama}</div>
+        ${ekstraHtml}
+        ${badgesHtml}
       </div>
-      <div class="guru-student-expand">
-        <div class="attendance-grid">${attendanceHtml}</div>
-      </div>
-    `;
+      ${photoHtml}
+    </div>
+    <div class="guru-student-expand">
+      <div class="attendance-grid">${attendanceHtml}</div>
+    </div>
+  `;
 
-    container.appendChild(card);
-  });
+  return card;
 }
 // ============================================
 // AUTOLOGIN LISTENER
@@ -387,6 +407,20 @@ function renderGuruAlertDetail(data) {
           <div class="alert-item-dot yellow"></div>
           <div class="alert-item-name">${s.nama}</div>
           <div class="alert-item-meta">Belum syarat</div>
+        </div>`;
+    });
+    detail.appendChild(g);
+  }
+    if (a.minusPointRendah?.length > 0) {
+    const g = document.createElement("div");
+    g.className = "alert-group";
+    g.innerHTML = `<div class="alert-group-title" style="color:var(--red);">Minus Poin Rendah (${a.minusPointRendah.length})</div>`;
+    a.minusPointRendah.forEach(s => {
+      g.innerHTML += `
+        <div class="alert-item">
+          <div class="alert-item-dot red"></div>
+          <div class="alert-item-name">${s.nama}</div>
+          <div class="alert-item-meta">${s.point} poin (batas ${s.threshold})</div>
         </div>`;
     });
     detail.appendChild(g);
