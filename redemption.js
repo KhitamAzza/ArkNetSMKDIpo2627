@@ -47,43 +47,70 @@ redemptionPassword.addEventListener("input", () => {
 // ============================================
 // REDEMPTION: LOAD STUDENTS
 // ============================================
+// ============================================
+// REDEMPTION: LOAD STUDENTS (BUNDLE + CACHE)
+// ============================================
 async function loadRedemptionStudents() {
   if (!currentRedemptionGuru) return;
-  showStudentLoading(true);
 
+  const cacheKey = "redemption_bundle_" + currentRedemptionGuru;
+  const cachedRaw = sessionStorage.getItem(cacheKey);
+
+  // 1. Render instantly from cache (no spinner yet)
+  if (cachedRaw) {
+    try {
+      const cached = JSON.parse(cachedRaw);
+      renderRedemptionBundle(cached);
+    } catch (e) {
+      sessionStorage.removeItem(cacheKey);
+    }
+  }
+
+  // 2. Fetch fresh bundle in background
+  showStudentLoading(true);
   try {
-    const res = await fetch(API_URL + "?action=getRedemptionStudents&guru=" + encodeURIComponent(currentRedemptionGuru));
+    const res = await fetch(API_URL + "?action=getRedemptionBundle&guru=" + encodeURIComponent(currentRedemptionGuru));
     const data = await res.json();
 
     if (data.status === "ok") {
-      redemptionAllStudents = data.students || [];   // ← cache
-      const hasReachedLimit = data.hasReachedLimit || false;
-      renderRedemptionBanner(hasReachedLimit);
-      renderRedemptionList(redemptionAllStudents, hasReachedLimit, data.submissionCount, data.maxPointSubmit);
-    } else {
+      sessionStorage.setItem(cacheKey, JSON.stringify(data));
+      renderRedemptionBundle(data);
+    } else if (!cachedRaw) {
+      // Only show error if we had nothing to display
       showStudentToast(data.message || "Gagal memuat data", "error");
     }
   } catch (err) {
-    showStudentToast("Error koneksi", "error");
+    console.error(err);
+    if (!cachedRaw) {
+      showStudentToast("Error koneksi", "error");
+    }
+    // If cache exists, keep stale data — user sees no interruption
   }
   showStudentLoading(false);
 }
-// Filter locally without hitting the server again
-function filterRedemptionList(query) {
-  const q = query.trim().toLowerCase();
-  const filtered = q
-    ? redemptionAllStudents.filter(s => s.nama.toLowerCase().includes(q))
-    : redemptionAllStudents;
 
-  // Re-use the same limit state from the last load
-  const banner = document.getElementById("redemptionBanner");
-  const hasReachedLimit = banner && banner.style.display === "block";
-  const countEl = document.getElementById("redemptionCountBadge"); // optional counter
-  const maxVal = appConfig?.maxPointSubmit || 1;
+// ============================================
+// REDEMPTION: RENDER BUNDLE
+// ============================================
+function renderRedemptionBundle(data) {
+  redemptionAllStudents = data.students || [];
 
-  renderRedemptionList(filtered, hasReachedLimit, countEl ? countEl.dataset.count : 0, maxVal);
+  // Sync latest config values from server so slider uses correct max
+  if (data.maxRedemptionPoint) {
+    appConfig = appConfig || {};
+    appConfig.maxRedemptionPoint = data.maxRedemptionPoint;
+    appConfig.maxPointSubmit = data.maxPointSubmit;
+  }
+
+  const hasReachedLimit = data.hasReachedLimit || false;
+  renderRedemptionBanner(hasReachedLimit);
+  renderRedemptionList(
+    redemptionAllStudents,
+    hasReachedLimit,
+    data.submissionCount,
+    data.maxPointSubmit
+  );
 }
-
 function renderRedemptionBanner(hasReachedLimit) {
   redemptionBanner.style.display = hasReachedLimit ? "block" : "none";
 }
@@ -246,6 +273,10 @@ async function submitRedemption() {
     if (data.status === "ok") {
       closeRedemptionModal();
       showStudentToast("✓ " + data.message, "ok");
+      
+      // 🔥 Invalidate cache so next load is fresh
+      sessionStorage.removeItem("redemption_bundle_" + currentRedemptionGuru);
+      
       loadRedemptionStudents(); // Refresh list + banner
     } else {
       showStudentToast(data.message || "Gagal menyimpan", "error");
@@ -257,11 +288,4 @@ async function submitRedemption() {
   }
 
   showStudentLoading(false);
-}
-// Search box listener
-const redemptionSearchInput = document.getElementById("redemptionSearch");
-if (redemptionSearchInput) {
-  redemptionSearchInput.addEventListener("input", (e) => {
-    filterRedemptionList(e.target.value);
-  });
 }
