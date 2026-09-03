@@ -1,0 +1,180 @@
+/* ===== BUKTI KEHADIRAN ===== */
+#buktiScreen {
+  display: none;
+  flex-direction: column;
+  height: 100dvh;
+  background: var(--bg);
+}
+
+.bukti-scroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
+  padding: 16px;
+}
+
+.bukti-date-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.bukti-date-btn:active {
+  transform: scale(0.98);
+  background: var(--border);
+}
+.bukti-date-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+.bukti-date-text {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+.bukti-date-arrow {
+  font-size: 12px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.bukti-ekstra-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.bukti-ekstra-item:active {
+  transform: scale(0.98);
+  background: var(--border);
+}
+.bukti-ekstra-info {
+  flex: 1;
+  min-width: 0;
+}
+.bukti-ekstra-name {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+.bukti-ekstra-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.bukti-ekstra-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+.bukti-ekstra-badge.has {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--green);
+}
+.bukti-ekstra-badge.missing {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--red);
+}
+
+.bukti-photo-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.bukti-photo-card:active {
+  transform: scale(0.98);
+}
+.bukti-photo-frame {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.bukti-photo-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.bukti-photo-error {
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 24px;
+  text-align: center;
+}
+.bukti-photo-meta {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.bukti-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+.bukti-meta-label {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.bukti-meta-value {
+  color: var(--text);
+  font-weight: 700;
+  text-align: right;
+}
+.bukti-photo-hint {
+  text-align: center;
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 600;
+  padding: 0 16px 16px;
+}
+
+.bukti-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+}
+.bukti-empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+.bukti-empty-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--red);
+  margin-bottom: 6px;
+}
+.bukti-empty-sub {
+  font-size: 13px;
+  color: var(--text-secondary);
+}

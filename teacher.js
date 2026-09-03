@@ -66,7 +66,7 @@ async function loadTeacherDashboard() {
 
     // 2. Fetch attendance, registrations, redemptions, AND payments in parallel
     const [{ data: attendance }, { data: registrations }, { data: redemptions }, { data: payments }] = await Promise.all([
-      sb.from('Attendance').select('student_id, status, date, period').eq('semester', currentSemester).in('student_id', studentIds),
+      sb.from('AttendanceV2').select('student_id, status, date, period').eq('semester', currentSemester).in('student_id', studentIds),
       sb.from('registrations').select('student_id, status, ekstra, alasan, created_at').in('student_id', studentIds).order('created_at', { ascending: false }),
       sb.from('Redemptions').select('student_id, poin, deskripsi, guru, created_at').eq('semester', currentSemester).in('student_id', studentIds),
       sb.from('bayardenda').select('student_id, amount').eq('semester', currentSemester).in('student_id', studentIds)

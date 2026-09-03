@@ -237,8 +237,8 @@ async function getStudentRegistrationStatus(studentId) {
 }
 async function loadStudentAttendance(studentId) {
   const { data: rows, error } = await sb
-    .from('Attendance')
-    .select('date, status, period')
+    .from('AttendanceV2')              // ← changed table
+    .select('date, status')            // ← removed period
     .eq('student_id', studentId)
     .eq('semester', currentSemester)
     .order('date', { ascending: true });
@@ -267,20 +267,9 @@ async function loadStudentAttendance(studentId) {
 
 function deriveStatus(rows) {
   if (!rows || rows.length === 0) return null;
-  const hasTelat = rows.some(r => r.status?.trim().toUpperCase() === 'TELAT');
-  const hasEkstra = rows.some(r => r.period === 'EKSTRA');
-  if (hasTelat && hasEkstra) {
-    const ekstraExplicit = rows.find(r => r.period === 'EKSTRA' && r.status?.trim());
-    if (ekstraExplicit) return ekstraExplicit.status.trim().toUpperCase();
-    return 'TERLAMBAT';
-  }
-  if (hasTelat) return 'TELAT';
+  // AttendanceV2 stores the final status directly — no period logic needed
   const explicit = rows.find(r => r.status?.trim());
   if (explicit) return explicit.status.trim().toUpperCase();
-  const hasPagi = rows.some(r => r.period === 'PAGI');
-  if (hasPagi && hasEkstra) return 'HADIR';
-  if (hasPagi) return 'PAGI';
-  if (hasEkstra) return 'TERLAMBAT';
   return null;
 }
 
@@ -670,7 +659,7 @@ async function showDendaSaya() {
   try {
     // Reload fresh data
     const { data: rows, error: attErr } = await sb
-      .from('Attendance')
+      .from('AttendanceV2')
       .select('status')
       .eq('student_id', currentStudent.id)
       .eq('semester', currentSemester)

@@ -184,7 +184,7 @@ async function loadAppConfig() {
 
 function getDefaultConfig() {
   return {
-    threshold: 0.6,
+    allow_app_camera: true,
     validate: true,
     pagi_start: 5.00,
     pagi_end: 8.45,
