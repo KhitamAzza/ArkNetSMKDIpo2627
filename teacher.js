@@ -65,12 +65,24 @@ async function loadTeacherDashboard() {
     }
 
     // 2. Fetch attendance, registrations, redemptions, AND payments in parallel
-    const [{ data: attendance }, { data: registrations }, { data: redemptions }, { data: payments }] = await Promise.all([
-      sb.from('AttendanceV2').select('student_id, status, date, period').eq('semester', currentSemester).in('student_id', studentIds),
+    const [
+      { data: attendance, error: attErr },
+      { data: registrations, error: regErr },
+      { data: redemptions, error: redErr },
+      { data: payments, error: payErr }
+    ] = await Promise.all([
+      sb.from('AttendanceV2').select('student_id, status, date').eq('semester', currentSemester).in('student_id', studentIds),
       sb.from('registrations').select('student_id, status, ekstra, alasan, created_at').in('student_id', studentIds).order('created_at', { ascending: false }),
       sb.from('Redemptions').select('student_id, poin, deskripsi, guru, created_at').eq('semester', currentSemester).in('student_id', studentIds),
       sb.from('bayardenda').select('student_id, amount').eq('semester', currentSemester).in('student_id', studentIds)
     ]);
+
+    // Don't fail silently — a bad column/table name here used to just resolve
+    // with data: null, which looked like "no data" instead of an error.
+    if (attErr) console.error("Teacher dashboard: attendance query failed", attErr);
+    if (regErr) console.error("Teacher dashboard: registrations query failed", regErr);
+    if (redErr) console.error("Teacher dashboard: redemptions query failed", redErr);
+    if (payErr) console.error("Teacher dashboard: payments query failed", payErr);
 
     const cfg = appConfig || {};
     const dendaAlpha = cfg.denda_alpha ?? 0;
@@ -658,107 +670,74 @@ function renderRedemptionClassList(students) {
 }
 
 // ============================================
-// FAB WHATSAPP (now works offline from cache)
+// TEACHER: WA REPORT (choice modal)
 // ============================================
-let fabExpanded = false;
-
-function toggleFab() {
-  fabExpanded = !fabExpanded;
-  document.getElementById("fabOptions").classList.toggle("visible", fabExpanded);
-  document.getElementById("fabMain").classList.toggle("expanded", fabExpanded);
-}
-
-function closeFab() {
-  fabExpanded = false;
-  document.getElementById("fabOptions").classList.remove("visible");
-  document.getElementById("fabMain").classList.remove("expanded");
-}
-
-document.addEventListener("click", (e) => {
-  if (fabExpanded && !e.target.closest(".fab-container")) {
-    closeFab();
+function openWaChoiceModal() {
+  if (!currentGuru) return;
+  if (guruClassData.length === 0) {
+    showStudentToast("Data belum dimuat, mohon tunggu...", "info");
+    return;
   }
-});
+  document.getElementById("waChoiceModal").classList.add("visible");
+}
+
+function closeWaChoiceModal() {
+  document.getElementById("waChoiceModal").classList.remove("visible");
+}
 
 function openWhatsApp(text) {
   window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
 }
 
-async function shareKehadiranWA() {
-  closeFab();
-  if (!currentGuru || guruClassData.length === 0) return;
-  showStudentLoading(true);
+// Students with a liability: absences, negative net point, unpaid denda, or missing syarat khusus
+function buildTanggunganReport() {
+  const list = guruClassData
+    .filter(s => s.alphaCount > 0 || s.netPoint < 0 || s.sisa > 0 || s.hasSyaratIssue)
+    .sort((a, b) => b.alphaCount - a.alphaCount || a.netPoint - b.netPoint || b.sisa - a.sisa);
 
-  try {
-    const groups = {};
-    guruClassData.forEach(s => {
-      const total = s.stats.totalDays || 0;
-      const hadir = s.stats.HADIR || 0;
-      const pct = total > 0 ? Math.round((hadir / total) * 100) : 0;
-      if (!groups[pct]) groups[pct] = [];
-      groups[pct].push(s);
-    });
-
-    const sortedPcts = Object.keys(groups).map(Number).sort((a, b) => b - a);
-    let msg = `*Prosentase kehadiran kelas ${currentGuru.kelas}*\n\n`;
-    sortedPcts.forEach(pct => {
-      msg += `*Kehadiran ${pct}%*\n`;
-      groups[pct].forEach(s => {
-        const hasEkskul = s.ekstra && s.ekstra !== "0";
-        msg += hasEkskul ? `${s.nama} - ${s.ekstra}\n` : `${s.nama} (tidak terdaftar ekskul)\n`;
-      });
-      msg += `\n`;
-    });
-
-    openWhatsApp(msg);
-  } catch (err) {
-    showStudentToast("Error membuat pesan", "error");
+  let msg = `*${currentGuru.kelas}*\nSiswa dengan tanggungan\n\n`;
+  if (list.length === 0) {
+    msg += "Tidak ada siswa dengan tanggungan 🎉\n";
+    return msg;
   }
-  showStudentLoading(false);
+  list.forEach(s => {
+    const ekstra = (s.ekstra && s.ekstra !== '0' && s.ekstra.trim() !== '') ? s.ekstra : "belum ekskul";
+    const parts = [ekstra, `Alpha ${s.alphaCount}x`, `minus ${s.netPoint}`];
+    if (s.sisa > 0) parts.push(`denda Rp ${s.sisa.toLocaleString("id-ID")}`);
+    if (s.hasSyaratIssue) parts.push("syarat khusus belum");
+    msg += `* ${s.nama} - ${parts.join(" - ")}\n`;
+  });
+  return msg;
 }
 
-async function shareRekapWA() {
-  closeFab();
-  if (!currentGuru || guruClassData.length === 0) return;
-  showStudentLoading(true);
+// Students accepted into an ekskul, with no debt / minus point / syarat issue left
+function buildValidasiReport() {
+  const list = guruClassData.filter(s =>
+    s.regStatus === 'accepted' && !s.hasSyaratIssue && !s.hasDebt && !s.hasMinusPoint
+  );
 
-  try {
-    const accepted = guruClassData.filter(s => s.regStatus === "accepted");
-    const pending  = guruClassData.filter(s => s.regStatus === "pending");
-    const tidakMemiliki = guruClassData.filter(s => ["none","rejected_once","exhausted"].includes(s.regStatus));
-
-    let msg = `*Rekap pendaftaran ekskul kelas ${currentGuru.kelas}*\n\n`;
-    if (accepted.length) { msg += `*Siswa sudah diterima ekskul*\n`; accepted.forEach(s => msg += `${s.nama} - ${s.ekstra}\n`); msg += `\n`; }
-    if (pending.length)  { msg += `*Siswa sudah mendaftar ekskul*\n`; pending.forEach(s => msg += `${s.nama} - ${s.regEkstra}\n`); msg += `\n`; }
-    if (tidakMemiliki.length) {
-      msg += `*Siswa tidak memiliki ekskul*\n`;
-      tidakMemiliki.forEach(s => {
-        const label = s.regStatus === "rejected_once" ? "(ditolak)" : (s.regStatus === "expelled" ? "(dikeluarkan)" : "(belum mendaftar)");
-        msg += `${s.nama} ${label}\n`;
-      });
-      msg += `\n`;
-    }
-    openWhatsApp(msg);
-  } catch (err) {
-    showStudentToast("Error membuat pesan", "error");
+  let msg = `*${currentGuru.kelas}*\nSiswa siap validasi\n\n`;
+  if (list.length === 0) {
+    msg += "Belum ada siswa yang siap validasi\n";
+    return msg;
   }
-  showStudentLoading(false);
+  list.forEach(s => { msg += `* ${s.nama}\n`; });
+  return msg;
 }
 
-function shareDendaWA() {
-  closeFab();
-  if (!currentGuru || guruClassData.length === 0) {
-    showStudentToast("Data belum dimuat", "info");
-    return;
-  }
-  const withDebt = guruClassData.filter(s => s.sisa > 0).sort((a, b) => b.sisa - a.sisa);
-  if (withDebt.length === 0) {
-    showStudentToast("Tidak ada siswa yang memiliki sisa denda", "info");
-    return;
-  }
-  let msg = `*Rekap sisa denda kelas ${currentGuru.kelas}*\n\n`;
-  withDebt.forEach(s => { msg += `${s.nama}: Rp ${s.sisa.toLocaleString("id-ID")}\n`; });
-  openWhatsApp(msg);
+function sendWaTanggungan() {
+  closeWaChoiceModal();
+  openWhatsApp(buildTanggunganReport());
+}
+
+function sendWaValidasi() {
+  closeWaChoiceModal();
+  openWhatsApp(buildValidasiReport());
+}
+
+function sendWaSemua() {
+  closeWaChoiceModal();
+  openWhatsApp(buildTanggunganReport() + "\n" + buildValidasiReport());
 }
 
 // ============================================

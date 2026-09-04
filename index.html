@@ -262,25 +262,6 @@
     <button class="icon-btn" onclick="guruLogout()" title="Keluar">🚪</button>
     <div class="header-greeting" id="guruHeaderName">-</div>
     <div style="width:40px;"></div>
-      
-    <!-- FAB WhatsApp -->
-  <div class="fab-container" id="fabContainer">
-    <div class="fab-options" id="fabOptions">
-      <div class="fab-option" onclick="shareKehadiranWA()">
-        <div class="fab-option-label">Kirim kehadiran</div>
-        <div class="fab-option-btn">📊</div>
-      </div>
-      <div class="fab-option" onclick="shareRekapWA()">
-        <div class="fab-option-label">Kirim rekap ekskul</div>
-        <div class="fab-option-btn">📋</div>
-      </div>
-      <div class="fab-option" onclick="shareDendaWA()">
-        <div class="fab-option-label">Kirim rekap denda</div>
-        <div class="fab-option-btn">💰</div>
-      </div>
-    </div>
-    <button class="fab-main" id="fabMain" onclick="toggleFab()">💬</button>
-  </div>
   </div>
 
   <div class="guru-class-tag" id="guruClassTag">-</div>
@@ -315,6 +296,10 @@
     <div class="guru-menu-btn" onclick="showRedemptionClass()">
       <div class="menu-icon">⭐</div>
       <div class="menu-label">Poin Penebusan</div>
+    </div>
+    <div class="guru-menu-btn" onclick="openWaChoiceModal()">
+      <div class="menu-icon">💬</div>
+      <div class="menu-label">Kirim Laporan WA</div>
     </div>
   </div>
 </div>
@@ -372,6 +357,42 @@
   <div class="guru-class-tag" id="guruRedemptionClassTag">-</div>
   <div class="guru-rekap-list" id="guruRedemptionList"></div>
 </div>
+<!-- ===== GURU: WA REPORT CHOICE MODAL ===== -->
+<div id="waChoiceModal" class="modal-overlay">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <div class="modal-title">Kirim Laporan WA</div>
+      <button class="icon-btn" onclick="closeWaChoiceModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="wa-choice-option" onclick="sendWaTanggungan()">
+        <div class="wa-choice-icon">⚠️</div>
+        <div class="wa-choice-text">
+          <div class="wa-choice-title">Siswa dengan Tanggungan</div>
+          <div class="wa-choice-desc">Alpha & minus poin per siswa</div>
+        </div>
+      </div>
+      <div class="wa-choice-option" onclick="sendWaValidasi()">
+        <div class="wa-choice-icon">✅</div>
+        <div class="wa-choice-text">
+          <div class="wa-choice-title">Siswa Siap Validasi</div>
+          <div class="wa-choice-desc">Sudah lunas & tanpa masalah</div>
+        </div>
+      </div>
+      <div class="wa-choice-option" onclick="sendWaSemua()">
+        <div class="wa-choice-icon">📋</div>
+        <div class="wa-choice-text">
+          <div class="wa-choice-title">Kirim Semua Laporan</div>
+          <div class="wa-choice-desc">Tanggungan + siap validasi</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeWaChoiceModal()">Batal</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== ALASAN MODAL ===== -->
 <div id="alasanModal" class="modal-overlay">
   <div class="modal-sheet">

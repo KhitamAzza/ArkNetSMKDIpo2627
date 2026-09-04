@@ -344,84 +344,36 @@
 .guru-rekap-status.expelled { color: var(--red); }
 .guru-rekap-status.none     { color: var(--text-secondary); }
 
-/* ===== TEACHER: FAB ===== */
-.fab-container {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  z-index: 200;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0;
-}
-
-.fab-main {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: none;
-  background: linear-gradient(135deg, var(--green), #059669);
-  color: white;
-  font-size: 24px;
-  cursor: pointer;
-  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+/* ===== TEACHER: WA REPORT CHOICE MODAL ===== */
+.wa-choice-option {
   display: flex;
   align-items: center;
-  justify-content: center;
-}
-
-.fab-main:active { transform: scale(0.92); }
-.fab-main.expanded { transform: rotate(45deg); }
-
-.fab-options {
-  display: none;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.fab-options.visible {
-  display: flex;
-  animation: slideUp 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.fab-option {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-}
-
-.fab-option-label {
-  background: var(--card);
+  gap: 14px;
+  padding: 14px;
+  background: rgba(255,255,255,0.03);
   border: 1px solid var(--border);
-  padding: 8px 14px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.wa-choice-option:active { transform: scale(0.98); background: var(--border); }
+
+.wa-choice-icon {
+  width: 40px;
+  height: 40px;
   border-radius: 12px;
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-  color: var(--text);
-}
-
-.fab-option-btn {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
   background: var(--card);
-  border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 18px;
   flex-shrink: 0;
-  transition: all 0.15s;
 }
 
-.fab-option:active .fab-option-btn { transform: scale(0.9); background: var(--border); }
+.wa-choice-text { flex: 1; min-width: 0; }
+.wa-choice-title { font-size: 15px; font-weight: 700; }
+.wa-choice-desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
 
 /* ===== ADMIN: FAB ===== */
 .fab-admin {
