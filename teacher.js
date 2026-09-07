@@ -74,7 +74,7 @@ async function loadTeacherDashboard() {
       sb.from('AttendanceV2').select('student_id, status, date').eq('semester', currentSemester).in('student_id', studentIds),
       sb.from('registrations').select('student_id, status, ekstra, alasan, created_at').in('student_id', studentIds).order('created_at', { ascending: false }),
       sb.from('Redemptions').select('student_id, poin, deskripsi, guru, created_at').eq('semester', currentSemester).in('student_id', studentIds),
-      sb.from('bayardenda').select('student_id, amount').eq('semester', currentSemester).in('student_id', studentIds)
+      sb.from('bayardenda').select('student_id, amount, submitter, created_at, note').eq('semester', currentSemester).in('student_id', studentIds).order('created_at', { ascending: false })
     ]);
 
     // Don't fail silently — a bad column/table name here used to just resolve
@@ -172,6 +172,7 @@ async function loadTeacherDashboard() {
         totalDebt,
         paid,
         sisa,
+        payments: sPay,
         totalMinus,
         redemptionTotal,
         netPoint,
@@ -562,6 +563,12 @@ function backToGuruDashboardFromDenda() {
   backToGuruDashboard();
 }
 
+function fmtRekapDate(iso) {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
 function renderRekapDendaList(students) {
   const container = document.getElementById("guruDendaStudentList");
   container.innerHTML = "";
@@ -609,6 +616,24 @@ function renderRekapDendaList(students) {
             <div class="debt-detail-label">Sisa</div>
           </div>
         </div>
+        ${(s.payments && s.payments.length > 0) ? `
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+            <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Riwayat Pembayaran</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              ${s.payments.map(p => `
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;">
+                  <div style="min-width:0;">
+                    <div style="font-weight:700;color:var(--green);">Rp ${Number(p.amount).toLocaleString("id-ID")}</div>
+                    <div style="color:var(--text-secondary);font-size:11px;margin-top:1px;">${fmtRekapDate(p.created_at)}</div>
+                  </div>
+                  <div style="text-align:right;font-weight:600;color:var(--text-secondary);white-space:nowrap;">
+                    Diterima: ${p.submitter || "-"}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
       </div>
     `;
     container.appendChild(card);

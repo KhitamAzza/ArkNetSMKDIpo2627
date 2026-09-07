@@ -126,7 +126,7 @@ async function loadStudentDashboard() {
     try {
       const { data: pays } = await sb
         .from('bayardenda')
-        .select('amount, created_at')
+        .select('amount, created_at, submitter')
         .eq('student_id', currentStudent.id)
         .eq('semester', currentSemester)
         .order('created_at', { ascending: false });
@@ -668,7 +668,7 @@ async function showDendaSaya() {
 
     const { data: pays, error: payErr } = await sb
       .from('bayardenda')
-      .select('amount, created_at')
+      .select('amount, created_at, submitter')
       .eq('student_id', currentStudent.id)
       .eq('semester', currentSemester)
       .order('created_at', { ascending: false });
@@ -726,8 +726,9 @@ async function showDendaSaya() {
                 <div>
                   <div style="font-size:13px;font-weight:700;color:var(--green);">Rp ${Number(p.amount).toLocaleString('id-ID')}</div>
                   <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">${fmtDate(p.created_at)}</div>
+                  <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Diterima oleh: ${p.submitter || '-'}</div>
                 </div>
-                <div style="font-size:11px;color:var(--text-secondary);font-weight:600;">✓ Lunas</div>
+                <div style="font-size:11px;color:var(--text-secondary);font-weight:600;white-space:nowrap;">✓ Lunas</div>
               </div>
             `).join('')}
           </div>
