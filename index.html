@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="student.css">
   <link rel="stylesheet" href="teacher.css">
   <link rel="stylesheet" href="redemption.css">
+  <link rel="stylesheet" href="validasi.css">
   <link rel="stylesheet" href="bukti.css">
 </head>
 <body>
@@ -50,9 +51,51 @@
     <div class="landing-btn-label">Bukti Kehadiran</div>
     <div class="landing-btn-desc">Lihat foto absensi harian</div>
   </button>
+  <button class="landing-btn validasi wide" onclick="showValidasiBoard()">
+    <div class="landing-btn-icon">✅</div>
+    <div class="landing-btn-label">Siswa Siap Validasi</div>
+    <div class="landing-btn-desc">Kesiapan validasi ekskul per kelas</div>
+  </button>
 </div>
   <!-- ===== ADMIN: FAB ===== -->
 <div class="fab-admin" id="fabAdmin" onclick="openAdminLogin()">🔒</div>
+</div>
+
+<!-- ===== VALIDASI: BOARD ===== -->
+<div id="validasiBoardScreen" style="display:none;">
+  <div class="student-header">
+    <button class="icon-btn" onclick="backToLandingFromValidasi()">◀</button>
+    <div class="header-greeting">Siswa Siap Validasi</div>
+    <div style="width:40px;"></div>
+  </div>
+
+  <div class="validasi-search-area" id="validasiSearchArea">
+    <div class="validasi-hero">
+      <div class="validasi-hero-icon">✅</div>
+      <div class="validasi-hero-title">Cek Kesiapan Validasi</div>
+      <div class="validasi-hero-sub">Cari kelas atau nama siswa</div>
+    </div>
+
+    <div class="validasi-search-wrap">
+      <input
+        type="text"
+        id="validasiSearch"
+        class="validasi-search"
+        placeholder="Cari kelas atau nama siswa..."
+        autocomplete="off"
+      />
+      <div class="validasi-suggestions" id="validasiSuggestions"></div>
+    </div>
+
+    <div class="validasi-body" id="validasiBody">
+      <div class="validasi-empty" id="validasiEmpty">
+        <div class="validasi-empty-icon">🔍</div>
+        <div class="validasi-empty-text">Ketik nama kelas atau siswa untuk mulai</div>
+      </div>
+
+      <div class="validasi-result" id="validasiResult" style="display:none;"></div>
+    </div>
+  </div>
 </div>
 
 <!-- ===== SISWA: LOGIN ===== -->
@@ -557,42 +600,19 @@
     <div class="header-greeting" id="redemptionHeaderName">-</div>
     <div style="width:40px;"></div>
   </div>
-
-  <!-- Shown once the teacher has used up today's submissions -->
-  <div class="redemption-limit-panel" id="redemptionLimitPanel" style="display:none;">
-    <div class="redemption-limit-icon">✅</div>
-    <div class="redemption-limit-text">Kesempatan memberi poin anda sudah habis</div>
-    <div class="redemption-limit-sub" id="redemptionLimitSub">-</div>
+  <div class="redemption-banner" id="redemptionBanner" style="display:none;">
+    ✅ Anda sudah memberi nilai hari ini
   </div>
-
-  <!-- Search + on-demand detail, shown while the teacher can still submit -->
-  <div class="redemption-search-area" id="redemptionSearchArea" style="display:none;">
-    <div class="redemption-hero">
-      <div class="redemption-hero-icon">⭐</div>
-      <div class="redemption-hero-title">Beri Poin Penebusan</div>
-      <div class="redemption-hero-sub" id="redemptionHeroSub">Cari nama siswa untuk memberi nilai</div>
-    </div>
-
-    <div class="redemption-search-wrap">
-      <input
-        type="text"
-        id="redemptionSearch"
-        class="redemption-search"
-        placeholder="Cari nama siswa..."
-        autocomplete="off"
-      />
-      <div class="redemption-suggestions" id="redemptionSuggestions"></div>
-    </div>
-
-    <div class="redemption-body">
-      <div class="redemption-empty" id="redemptionEmpty">
-        <div class="redemption-empty-icon">🔍</div>
-        <div class="redemption-empty-text">Ketik nama siswa di atas untuk mulai</div>
-      </div>
-
-      <div class="redemption-detail" id="redemptionDetail" style="display:none;"></div>
-    </div>
-  </div>
+  <div class="redemption-search-wrap">
+  <input
+    type="text"
+    id="redemptionSearch"
+    class="redemption-search"
+    placeholder="Cari nama siswa..."
+    autocomplete="off"
+  />
+</div>
+  <div class="redemption-list" id="redemptionStudentList"></div>
 </div>
 
 <!-- ===== REDEMPTION: MODAL ===== -->
@@ -690,6 +710,7 @@
 <script src="teacher.js"></script>
 <script src="admin.js"></script>
 <script src="redemption.js"></script>
+<script src="validasi.js"></script>
 <script src="bukti.js"></script>
 
 

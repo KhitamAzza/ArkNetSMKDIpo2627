@@ -1,0 +1,286 @@
+/* ===== VALIDASI: LANDING BUTTON (wide, spans both grid columns) ===== */
+.landing-btn.validasi.wide {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  justify-content: center;
+  gap: 14px;
+  padding: 22px 20px;
+  border-color: rgba(59, 130, 246, 0.3);
+  text-align: left;
+}
+
+.landing-btn.validasi.wide .landing-btn-icon {
+  font-size: 34px;
+  filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.35));
+  margin-bottom: 0;
+}
+
+.landing-btn.validasi.wide .landing-btn-label {
+  font-size: 16px;
+}
+
+.landing-btn.validasi.wide .landing-btn-desc {
+  display: none;
+}
+
+/* ===== VALIDASI: SEARCH AREA (hero + search pinned near top, body fills the rest) ===== */
+.validasi-search-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 12px 16px 24px;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.validasi-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0 4px;
+  text-align: center;
+}
+
+.validasi-hero-icon {
+  font-size: 42px;
+  filter: drop-shadow(0 0 14px rgba(59, 130, 246, 0.35));
+}
+
+.validasi-hero-title {
+  font-size: 21px;
+  font-weight: 800;
+}
+
+.validasi-hero-sub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+/* ===== VALIDASI: SEARCH BAR ===== */
+.validasi-search-wrap {
+  position: relative;
+}
+
+.validasi-search {
+  width: 100%;
+  padding: 15px 16px 15px 44px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 16px center;
+  background-size: 18px;
+}
+
+.validasi-search::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.validasi-search:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+/* ===== VALIDASI: SUGGESTIONS DROPDOWN ===== */
+.validasi-suggestions {
+  display: none;
+  margin-top: 8px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.validasi-suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-bottom: 1px solid var(--border);
+}
+
+.validasi-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.validasi-suggestion-item:active {
+  background: var(--border);
+}
+
+.validasi-suggestion-item.kelas {
+  background: rgba(59, 130, 246, 0.06);
+}
+
+.validasi-suggestion-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.validasi-suggestion-name {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.validasi-suggestion-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* ===== VALIDASI: BODY (empty state / result, fills remaining space) ===== */
+.validasi-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.validasi-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 32px 16px;
+  color: var(--text-secondary);
+}
+
+.validasi-empty-icon {
+  font-size: 44px;
+  opacity: 0.45;
+}
+
+.validasi-empty-text {
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ===== VALIDASI: RESULT ===== */
+.validasi-result {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.validasi-result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.validasi-result-title {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.validasi-result-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.validasi-clear-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.validasi-clear-btn:active {
+  background: var(--border);
+}
+
+.validasi-student-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ===== VALIDASI: STUDENT CARD ===== */
+.validasi-student-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.validasi-student-card.is-ready {
+  border-left-color: var(--green);
+}
+
+.validasi-student-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.validasi-student-name {
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.validasi-student-status {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.validasi-student-card.is-ready .validasi-student-status {
+  color: var(--green);
+}
+
+.validasi-req-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.validasi-req-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 20px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.validasi-req-badge.ok {
+  color: var(--green);
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.validasi-req-badge.no {
+  color: var(--red);
+  border-color: rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.06);
+}
