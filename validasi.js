@@ -281,8 +281,35 @@ function computeValidasiStudents(students, attendance, registrations, redemption
     const score = requirements.filter(r => r.ok).length;
     const ready = score === requirements.length;
 
-    return { id: s.id, nama: s.nama, kelas: s.kelas, requirements, score, ready };
+    return {
+      id: s.id, nama: s.nama, kelas: s.kelas, requirements, score, ready,
+      // extra context, used to fill out the single-student detail view
+      ekstra: s.ekstra && s.ekstra !== '0' ? s.ekstra : null,
+      regStatus,
+      syaratOk: !hasSyaratIssue,
+      attendance: { hadir: stats.HADIR, alpha: alphaCount, terlambat: lateCount },
+      denda: { total: totalDebt, paid, sisa },
+      poin: { net: netPoint, threshold: pointThreshold }
+    };
   });
+}
+
+// ============================================
+// VALIDASI BOARD: LABEL HELPERS
+// ============================================
+function validasiRegStatusLabel(regStatus) {
+  switch (regStatus) {
+    case 'accepted': return 'Diterima';
+    case 'pending': return 'Menunggu persetujuan';
+    case 'rejected_once': return 'Ditolak (1x, bisa daftar ulang)';
+    case 'exhausted': return 'Ditolak (kesempatan habis)';
+    case 'expelled': return 'Dikeluarkan dari ekskul';
+    default: return 'Belum mendaftar';
+  }
+}
+
+function validasiRupiah(n) {
+  return "Rp" + Math.abs(n || 0).toLocaleString('id-ID');
 }
 
 // ============================================
@@ -320,8 +347,74 @@ function renderValidasiStudentResult(s) {
     <div class="validasi-student-list">
       ${renderStudentCardHtml(s, true)}
     </div>
+    ${renderValidasiStudentDetailHtml(s)}
   `;
   validasiResult.style.display = "block";
+}
+
+function renderValidasiStudentDetailHtml(s) {
+  const dendaOk = s.denda.sisa <= 0;
+  const poinOk = s.poin.net >= s.poin.threshold;
+
+  return `
+    <div class="validasi-detail-section">
+      <div class="validasi-detail-block">
+        <div class="validasi-detail-block-title">🏫 Ekskul</div>
+        <div class="validasi-detail-row">
+          <span class="validasi-detail-label">Pilihan</span>
+          <span class="validasi-detail-value">${s.ekstra || "—"}</span>
+        </div>
+        <div class="validasi-detail-row">
+          <span class="validasi-detail-label">Status</span>
+          <span class="validasi-detail-value ${s.regStatus === 'accepted' ? "is-green" : "is-yellow"}">${validasiRegStatusLabel(s.regStatus)}</span>
+        </div>
+      </div>
+
+      <div class="validasi-detail-block">
+        <div class="validasi-detail-block-title">📋 Kehadiran</div>
+        <div class="validasi-detail-row">
+          <span class="validasi-detail-label">Hadir</span>
+          <span class="validasi-detail-value is-green">${s.attendance.hadir}x</span>
+        </div>
+        <div class="validasi-detail-row">
+          <span class="validasi-detail-label">Alpha</span>
+          <span class="validasi-detail-value ${s.attendance.alpha > 0 ? "is-red" : ""}">${s.attendance.alpha}x</span>
+        </div>
+        <div class="validasi-detail-row">
+          <span class="validasi-detail-label">Terlambat</span>
+          <span class="validasi-detail-value ${s.attendance.terlambat > 0 ? "is-yellow" : ""}">${s.attendance.terlambat}x</span>
+        </div>
+      </div>
+
+      <div class="validasi-detail-block">
+        <div class="validasi-detail-block-title">💰 Denda</div>
+        <div class="validasi-detail-row">
+          <span class="validasi-detail-label">Total tagihan</span>
+          <span class="validasi-detail-value">${validasiRupiah(s.denda.total)}</span>
+        </div>
+        <div class="validasi-detail-row">
+          <span class="validasi-detail-label">Sudah dibayar</span>
+          <span class="validasi-detail-value">${validasiRupiah(s.denda.paid)}</span>
+        </div>
+        <div class="validasi-detail-row">
+          <span class="validasi-detail-label">Sisa</span>
+          <span class="validasi-detail-value ${dendaOk ? "is-green" : "is-red"}">${dendaOk ? "Lunas" : validasiRupiah(s.denda.sisa)}</span>
+        </div>
+      </div>
+
+      <div class="validasi-detail-block">
+        <div class="validasi-detail-block-title">⭐ Poin</div>
+        <div class="validasi-detail-row">
+          <span class="validasi-detail-label">Poin bersih</span>
+          <span class="validasi-detail-value ${poinOk ? "is-green" : "is-red"}">${s.poin.net}</span>
+        </div>
+        <div class="validasi-detail-row">
+          <span class="validasi-detail-label">Batas minimum</span>
+          <span class="validasi-detail-value">${s.poin.threshold}</span>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function renderStudentCardHtml(s, hideName) {
