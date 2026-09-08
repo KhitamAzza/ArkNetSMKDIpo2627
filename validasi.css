@@ -148,12 +148,15 @@
   margin-top: 2px;
 }
 
-/* ===== VALIDASI: BODY (empty state / result, fills remaining space) ===== */
+/* ===== VALIDASI: BODY (empty state / result, fills remaining space) =====
+   NOTE: body itself stays top-aligned so the result list sits right under
+   the search bar. Only the empty placeholder centers itself vertically
+   (via margin:auto), since it's the only thing on screen at that point. */
 .validasi-body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .validasi-empty {
@@ -164,6 +167,7 @@
   gap: 12px;
   padding: 32px 16px;
   color: var(--text-secondary);
+  margin: auto 0;
 }
 
 .validasi-empty-icon {
@@ -292,3 +296,55 @@
   border-color: rgba(239, 68, 68, 0.25);
   background: rgba(239, 68, 68, 0.06);
 }
+
+/* ===== VALIDASI: STUDENT DETAIL (fills the single-student view) ===== */
+.validasi-detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.validasi-detail-block {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.validasi-detail-block-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+.validasi-detail-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-top: 1px solid var(--border);
+}
+
+.validasi-detail-row:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.validasi-detail-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.validasi-detail-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  text-align: right;
+}
+
+.validasi-detail-value.is-green { color: var(--green); }
+.validasi-detail-value.is-red { color: var(--red); }
+.validasi-detail-value.is-yellow { color: var(--yellow); }
