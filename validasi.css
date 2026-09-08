@@ -23,6 +23,14 @@
   display: none;
 }
 
+/* ===== VALIDASI: SCREEN ===== */
+#validasiBoardScreen {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding: 0 0 24px;
+}
+
 /* ===== VALIDASI: SEARCH AREA (hero + search pinned near top, body fills the rest) ===== */
 .validasi-search-area {
   flex: 1;
