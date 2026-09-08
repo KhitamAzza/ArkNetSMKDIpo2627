@@ -141,8 +141,14 @@ const redemptionLoginScreen = document.getElementById("redemptionLoginScreen");
 const redemptionScreen       = document.getElementById("redemptionScreen");
 const redemptionPassword     = document.getElementById("redemptionPassword");
 const redemptionHeaderName   = document.getElementById("redemptionHeaderName");
-const redemptionStudentList  = document.getElementById("redemptionStudentList");
-const redemptionBanner       = document.getElementById("redemptionBanner");
+const redemptionLimitPanel   = document.getElementById("redemptionLimitPanel");
+const redemptionLimitSub     = document.getElementById("redemptionLimitSub");
+const redemptionSearchArea   = document.getElementById("redemptionSearchArea");
+const redemptionHeroSub      = document.getElementById("redemptionHeroSub");
+const redemptionSearch       = document.getElementById("redemptionSearch");
+const redemptionSuggestions  = document.getElementById("redemptionSuggestions");
+const redemptionEmpty        = document.getElementById("redemptionEmpty");
+const redemptionDetail       = document.getElementById("redemptionDetail");
 const redemptionModal        = document.getElementById("redemptionModal");
 const redemptionModalName    = document.getElementById("redemptionModalName");
 const redemptionModalClass   = document.getElementById("redemptionModalClass");
@@ -277,6 +283,7 @@ function backToLandingFromRedemption() {
   landingScreen.style.display = "flex";
   redemptionPassword.value = "";
   currentRedemptionGuru = null;
+  resetRedemptionUI();
 }
 
 function backToLandingFromPointDetail() {

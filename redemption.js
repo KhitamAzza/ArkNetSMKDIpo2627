@@ -9,12 +9,23 @@ function getRedemptionConfig() {
   };
 }
 
+// Asia/Jakarta has a fixed UTC+7 offset (no DST), so this is a safe way to get
+// the UTC bounds of "today" in Jakarta for querying created_at columns.
+function getJakartaDayBoundsUTC() {
+  const todayStr = getJakartaDateISO(); // "YYYY-MM-DD"
+  const startUTC = new Date(todayStr + "T00:00:00+07:00");
+  const endUTC   = new Date(startUTC.getTime() + 24 * 60 * 60 * 1000);
+  return { startISO: startUTC.toISOString(), endISO: endUTC.toISOString() };
+}
+
 // ============================================
-// REDEMPTION: DOM REFS (local)
+// REDEMPTION: STATE
 // ============================================
-const redemptionSearchInput = document.getElementById("redemptionSearch");
-let   redemptionAllStudents = [];
-let   lastRedemptionBundle  = null;
+// Lightweight roster for autocomplete only — id/nama/kelas/ekstra, no
+// attendance or redemption history. That heavier data is fetched per student,
+// only once a name is actually picked.
+let redemptionStudentIndex = [];
+let redemptionLimitReached = false;
 
 // ============================================
 // REDEMPTION: LOGIN
@@ -50,7 +61,7 @@ function doRedemptionLogin() {
   redemptionScreen.style.display = "flex";
   redemptionHeaderName.textContent = staff.nama;
 
-  loadRedemptionStudents();
+  initRedemptionSession();
 }
 
 redemptionPassword.addEventListener("input", () => {
@@ -60,187 +71,208 @@ redemptionPassword.addEventListener("input", () => {
 });
 
 // ============================================
-// REDEMPTION: LOAD STUDENTS (SUPABASE)
+// REDEMPTION: SESSION INIT (limit check, then either the "habis" panel
+// or the search UI — never both)
 // ============================================
-async function loadRedemptionStudents() {
+async function initRedemptionSession() {
   if (!currentRedemptionGuru) return;
   showStudentLoading(true);
 
+  resetRedemptionUI(true /* keep the cached roster, just clear search/detail */);
+
   try {
-    // 1. All students
-    const { data: students, error: sErr } = await sb
-      .from('Database')
-      .select('id, nama, kelas, ekstra');
-    if (sErr) throw sErr;
+    const status = await checkTeacherSubmissionStatus();
+    redemptionLimitReached = status.reached;
 
-    // 2. Attendance this semester
-    const { data: attendance, error: aErr } = await sb
-      .from('Attendance')
-      .select('student_id, status')
-      .eq('semester', currentSemester);
-    if (aErr) throw aErr;
+    if (status.reached) {
+      redemptionSearchArea.style.display = "none";
+      redemptionLimitSub.textContent = `${status.count}/${status.max} nilai terkirim hari ini`;
+      redemptionLimitPanel.style.display = "flex";
+    } else {
+      redemptionLimitPanel.style.display = "none";
+      redemptionSearchArea.style.display = "flex";
+      redemptionHeroSub.textContent = `Kesempatan tersisa hari ini: ${status.max - status.count}/${status.max}`;
 
-    // 3. Redemptions this semester
-    const { data: redemptions, error: rErr } = await sb
-      .from('Redemptions')
-      .select('student_id, poin')
-      .eq('semester', currentSemester);
-    if (rErr) {
-      console.warn("Redemptions query failed (table may not exist yet):", rErr.message);
+      if (redemptionStudentIndex.length === 0) {
+        const { data, error } = await sb.from('Database').select('id, nama, kelas, ekstra');
+        if (error) throw error;
+        redemptionStudentIndex = data || [];
+      }
     }
+  } catch (err) {
+    console.error(err);
+    showStudentToast("Gagal memuat data", "error");
+  }
 
-    // 4. Aggregate minus points
-    const cfg = getRedemptionConfig();
-    const minusAlpha = appConfig?.nilai_minus_alpha ?? appConfig?.nilaiMinusAlpha ?? -10;
-    const minusLate  = appConfig?.nilai_minus_terlambat ?? appConfig?.nilaiMinusTerlambat ?? -5;
+  showStudentLoading(false);
+}
 
-    const attMap = {};
-    (attendance || []).forEach(r => {
-      if (!attMap[r.student_id]) attMap[r.student_id] = { alpha: 0, late: 0 };
-      const st = (r.status || "").toUpperCase();
-      if (st === "ALPHA") attMap[r.student_id].alpha++;
-      if (st === "TERLAMBAT" || st === "TELAT") attMap[r.student_id].late++;
+async function checkTeacherSubmissionStatus() {
+  const cfg = getRedemptionConfig();
+  const { startISO, endISO } = getJakartaDayBoundsUTC();
+
+  const { data: guruReds, error } = await sb
+    .from('Redemptions')
+    .select('created_at')
+    .eq('guru', currentRedemptionGuru)
+    .eq('semester', currentSemester)
+    .gte('created_at', startISO)
+    .lt('created_at', endISO);
+  if (error) throw error;
+
+  const count = (guruReds || []).length;
+  return { reached: count >= cfg.maxSubmit, count, max: cfg.maxSubmit };
+}
+
+// ============================================
+// REDEMPTION: SEARCH / AUTOCOMPLETE (client-side, against the light roster)
+// ============================================
+redemptionSearch.addEventListener("input", () => {
+  const q = redemptionSearch.value.trim().toLowerCase();
+  redemptionDetail.style.display = "none";
+  redemptionEmpty.style.display = "flex";
+  selectedRedemptionStudent = null;
+
+  if (!q || q.length < 2) {
+    redemptionSuggestions.style.display = "none";
+    return;
+  }
+
+  const matches = redemptionStudentIndex
+    .filter(s => s.nama.toLowerCase().includes(q))
+    .slice(0, 6);
+  renderRedemptionSuggestions(matches);
+});
+
+function renderRedemptionSuggestions(matches) {
+  redemptionSuggestions.innerHTML = "";
+  if (matches.length === 0) {
+    redemptionSuggestions.style.display = "none";
+    return;
+  }
+  matches.forEach(s => {
+    const div = document.createElement("div");
+    div.className = "redemption-suggestion-item";
+    div.innerHTML = `<div class="redemption-suggestion-name">${s.nama}</div><div class="redemption-suggestion-class">${s.kelas}</div>`;
+    div.onclick = () => selectRedemptionStudent(s);
+    redemptionSuggestions.appendChild(div);
+  });
+  redemptionSuggestions.style.display = "block";
+}
+
+document.addEventListener("click", (e) => {
+  if (redemptionSuggestions && !e.target.closest(".redemption-search-wrap")) {
+    redemptionSuggestions.style.display = "none";
+  }
+});
+
+// ============================================
+// REDEMPTION: PER-STUDENT LOOKUP (fetched only once a name is picked)
+// ============================================
+async function selectRedemptionStudent(student) {
+  redemptionSearch.value = student.nama;
+  redemptionSuggestions.style.display = "none";
+  showStudentLoading(true);
+
+  try {
+    const [{ data: attRows, error: attErr }, { data: reds, error: redErr }] = await Promise.all([
+      sb.from('AttendanceV2').select('date, status').eq('student_id', student.id).eq('semester', currentSemester),
+      sb.from('Redemptions').select('poin').eq('student_id', student.id).eq('semester', currentSemester)
+    ]);
+    if (attErr) throw attErr;
+    if (redErr) throw redErr;
+
+    const byDate = {};
+    (attRows || []).forEach(r => {
+      if (!byDate[r.date]) byDate[r.date] = [];
+      byDate[r.date].push(r);
+    });
+    const stats = { HADIR: 0, ALPHA: 0, TERLAMBAT: 0, PAGI: 0, TELAT: 0 };
+    Object.values(byDate).forEach(rows => {
+      const st = (deriveStatus(rows) || "-").toUpperCase();
+      if (stats[st] !== undefined) stats[st]++;
     });
 
-    const redMap = {};
-    (redemptions || []).forEach(r => {
-      redMap[r.student_id] = (redMap[r.student_id] || 0) + (r.poin || 0);
+    const minusAlpha = appConfig?.nilai_minus_alpha ?? -10;
+    const minusLate  = appConfig?.nilai_minus_terlambat ?? -5;
+    const alphaCount = stats.ALPHA;
+    const lateCount  = stats.TERLAMBAT + stats.TELAT + stats.PAGI; // PAGI counts as late, same as student/teacher dashboards
+    const totalMinus = (alphaCount * minusAlpha) + (lateCount * minusLate);
+    const redemptionTotal = (reds || []).reduce((sum, r) => sum + (r.poin || 0), 0);
+    const point = totalMinus + redemptionTotal;
+
+    selectedRedemptionStudent = { id: student.id, nama: student.nama, kelas: student.kelas, point };
+
+    redemptionEmpty.style.display = "none";
+    renderRedemptionDetail({
+      nama: student.nama,
+      kelas: student.kelas,
+      ekstra: student.ekstra,
+      hadir: stats.HADIR,
+      alpha: alphaCount,
+      late: lateCount,
+      point
     });
-
-    const processed = (students || []).map(s => {
-      const a = attMap[s.id] || { alpha: 0, late: 0 };
-      const minus = (a.alpha * minusAlpha) + (a.late * minusLate);
-      const plus  = redMap[s.id] || 0;
-      return { ...s, point: minus + plus, minus, plus };
-    });
-
-    // Only students with negative net points
-    redemptionAllStudents = processed.filter(s => s.point < 0).sort((a, b) => a.point - b.point);
-
-    // 5. Teacher daily submission limit (Jakarta today)
-    const todayStr = getJakartaDateISO();
-    const { data: guruReds, error: gErr } = await sb
-      .from('Redemptions')
-      .select('created_at')
-      .eq('guru', currentRedemptionGuru)
-      .eq('semester', currentSemester);
-    if (gErr) console.warn(gErr);
-
-    const todaySubs = (guruReds || []).filter(r => {
-      const d = new Date(r.created_at);
-      const jkt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(d);
-      return jkt === todayStr;
-    });
-
-    const submissionCount = todaySubs.length;
-    const hasReachedLimit = submissionCount >= cfg.maxSubmit;
-
-    const bundle = {
-      students: redemptionAllStudents,
-      hasReachedLimit,
-      submissionCount,
-      maxPointSubmit: cfg.maxSubmit,
-      maxRedemptionPoint: cfg.maxPoint
-    };
-    lastRedemptionBundle = bundle;
-    renderRedemptionBundle(bundle);
-
   } catch (err) {
     console.error(err);
     showStudentToast("Gagal memuat data siswa", "error");
   }
+
   showStudentLoading(false);
 }
 
-// ============================================
-// REDEMPTION: RENDER BUNDLE
-// ============================================
-function renderRedemptionBundle(data) {
-  // Sync slider caps from live config
-  if (data.maxRedemptionPoint) {
-    appConfig = appConfig || {};
-    appConfig.max_redemption_point = data.maxRedemptionPoint;
-    appConfig.max_point_submit     = data.maxPointSubmit;
-  }
-
-  renderRedemptionBanner(data.hasReachedLimit || false);
-  renderRedemptionList(
-    data.students || [],
-    data.hasReachedLimit || false,
-    data.submissionCount || 0,
-    data.maxPointSubmit || 1
-  );
+function getInitials(name) {
+  return (name || "").trim().split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
 }
 
-function renderRedemptionBanner(hasReachedLimit) {
-  redemptionBanner.style.display = hasReachedLimit ? "block" : "none";
-}
+function renderRedemptionDetail(d) {
+  const isMinus = d.point < 0;
+  redemptionDetail.innerHTML = `
+    <div class="redemption-detail-card ${isMinus ? "is-minus" : ""}">
+      <div class="redemption-detail-avatar ${isMinus ? "is-minus" : ""}">${getInitials(d.nama)}</div>
+      <div class="redemption-detail-name">${d.nama}</div>
+      <div class="redemption-detail-class">${d.kelas}${d.ekstra ? " • " + d.ekstra : ""}</div>
 
-function renderRedemptionList(students, hasReachedLimit, submissionCount, maxPointSubmit) {
-  const container = redemptionStudentList;
-  container.innerHTML = "";
-
-  if (students.length === 0) {
-    const searchVal = redemptionSearchInput?.value.trim();
-    const msg = searchVal
-      ? `Tidak ada siswa bernama “${searchVal}”`
-      : "✓ Tidak ada siswa dengan minus poin";
-    container.innerHTML = `<div class="admin-empty">${msg}</div>`;
-    return;
-  }
-
-  students.forEach(s => {
-    const card = document.createElement("div");
-    card.className = "redemption-card";
-
-    const disabled = hasReachedLimit ? "disabled" : "";
-    const btnText = hasReachedLimit
-      ? `✅ Batas tercapai (${submissionCount}/${maxPointSubmit})`
-      : "Tambah Poin";
-
-    card.innerHTML = `
-      <div class="redemption-card-main">
-        <div class="redemption-card-info">
-          <div class="redemption-card-name">${s.nama}</div>
-          <div class="redemption-card-class">${s.kelas}</div>
-          <div class="redemption-card-point">${s.point} poin</div>
+      <div class="redemption-detail-stats">
+        <div class="redemption-stat">
+          <div class="redemption-stat-val">${d.hadir}</div>
+          <div class="redemption-stat-label">Hadir</div>
         </div>
-        <button class="redemption-card-btn" onclick="openRedemptionModal('${s.id}','${s.nama}','${s.kelas}',${s.point})" ${disabled}>
-          ${btnText}
-        </button>
+        <div class="redemption-stat">
+          <div class="redemption-stat-val">${d.alpha}</div>
+          <div class="redemption-stat-label">Alpha</div>
+        </div>
+        <div class="redemption-stat">
+          <div class="redemption-stat-val">${d.late}</div>
+          <div class="redemption-stat-label">Terlambat</div>
+        </div>
       </div>
-    `;
-    container.appendChild(card);
-  });
-}
 
-// ============================================
-// REDEMPTION: SEARCH
-// ============================================
-function filterRedemptionList() {
-  if (!redemptionSearchInput || !lastRedemptionBundle) return;
-  const q = redemptionSearchInput.value.trim().toLowerCase();
-  const base = redemptionAllStudents.filter(s =>
-    s.nama.toLowerCase().includes(q) || s.kelas.toLowerCase().includes(q)
-  );
-  renderRedemptionList(
-    base,
-    lastRedemptionBundle.hasReachedLimit,
-    lastRedemptionBundle.submissionCount,
-    lastRedemptionBundle.maxPointSubmit
-  );
-}
+      <div class="redemption-detail-point ${isMinus ? "is-minus" : ""}">
+        <div class="redemption-detail-point-val">${d.point}</div>
+        <div class="redemption-detail-point-label">Sisa Poin</div>
+      </div>
 
-if (redemptionSearchInput) {
-  redemptionSearchInput.addEventListener("input", filterRedemptionList);
+      ${isMinus
+        ? `<button class="btn-start" onclick="openRedemptionModalFromDetail()">Tambah Poin</button>`
+        : `<div class="redemption-detail-ok">✓ Siswa ini tidak memiliki minus poin</div>`
+      }
+    </div>
+  `;
+  redemptionDetail.style.display = "block";
 }
 
 // ============================================
 // REDEMPTION: MODAL
 // ============================================
+function openRedemptionModalFromDetail() {
+  if (!selectedRedemptionStudent) return;
+  openRedemptionModal(selectedRedemptionStudent.id, selectedRedemptionStudent.nama, selectedRedemptionStudent.kelas, selectedRedemptionStudent.point);
+}
+
 function openRedemptionModal(studentId, nama, kelas, point) {
-  if (redemptionBanner.style.display === "block") {
-    showStudentToast("Anda sudah memberi nilai hari ini", "info");
+  if (redemptionLimitReached) {
+    showStudentToast("Kesempatan memberi poin anda sudah habis", "info");
     return;
   }
 
@@ -262,7 +294,6 @@ function openRedemptionModal(studentId, nama, kelas, point) {
 
 function closeRedemptionModal() {
   redemptionModal.classList.remove("visible");
-  selectedRedemptionStudent = null;
   redemptionSubmitBtn.disabled = false;
 }
 
@@ -319,7 +350,6 @@ async function submitRedemption() {
 
   const poin = Number(redemptionSlider.value);
   const deskripsi = redemptionDesc.value.trim();
-  const cfg = getRedemptionConfig();
 
   if (!deskripsi) {
     showStudentToast("Deskripsi wajib diisi", "error");
@@ -330,29 +360,16 @@ async function submitRedemption() {
   showStudentLoading(true);
 
   try {
-    // Double-check daily limit (race condition guard)
-    const todayStr = getJakartaDateISO();
-    const { data: guruReds, error: checkErr } = await sb
-      .from('Redemptions')
-      .select('created_at')
-      .eq('guru', currentRedemptionGuru)
-      .eq('semester', currentSemester);
-    if (checkErr) throw checkErr;
-
-    const todaySubs = (guruReds || []).filter(r => {
-      const d = new Date(r.created_at);
-      const jkt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(d);
-      return jkt === todayStr;
-    });
-
-    if (todaySubs.length >= cfg.maxSubmit) {
+    // Race condition guard: re-check the limit right before inserting.
+    const status = await checkTeacherSubmissionStatus();
+    if (status.reached) {
       showStudentToast("Batas pengiriman hari ini sudah tercapai", "error");
-      redemptionSubmitBtn.disabled = false;
-      showStudentLoading(false);
+      closeRedemptionModal();
+      redemptionLimitReached = true;
+      await initRedemptionSession();
       return;
     }
 
-    // Insert
     const { error: insertErr } = await sb.from('Redemptions').insert({
       student_id: selectedRedemptionStudent.id,
       nama: selectedRedemptionStudent.nama,
@@ -367,13 +384,27 @@ async function submitRedemption() {
 
     closeRedemptionModal();
     showStudentToast("✓ Poin penebusan berhasil dicatat", "ok");
-    loadRedemptionStudents(); // refresh list + banner
+    await initRedemptionSession(); // re-checks the limit; shows the "habis" panel if this was the last one
 
   } catch (err) {
     console.error(err);
     showStudentToast("Error: " + err.message, "error");
     redemptionSubmitBtn.disabled = false;
+    showStudentLoading(false);
   }
+}
 
-  showStudentLoading(false);
+// ============================================
+// REDEMPTION: RESET (called on back-to-landing and at the start of each session)
+// ============================================
+function resetRedemptionUI(keepIndex) {
+  if (redemptionSearch) redemptionSearch.value = "";
+  if (redemptionSuggestions) { redemptionSuggestions.innerHTML = ""; redemptionSuggestions.style.display = "none"; }
+  if (redemptionDetail) { redemptionDetail.innerHTML = ""; redemptionDetail.style.display = "none"; }
+  if (redemptionEmpty) redemptionEmpty.style.display = "flex";
+  if (redemptionLimitPanel) redemptionLimitPanel.style.display = "none";
+  if (redemptionSearchArea) redemptionSearchArea.style.display = "none";
+  selectedRedemptionStudent = null;
+  redemptionLimitReached = false;
+  if (!keepIndex) redemptionStudentIndex = [];
 }

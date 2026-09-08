@@ -557,19 +557,42 @@
     <div class="header-greeting" id="redemptionHeaderName">-</div>
     <div style="width:40px;"></div>
   </div>
-  <div class="redemption-banner" id="redemptionBanner" style="display:none;">
-    ✅ Anda sudah memberi nilai hari ini
+
+  <!-- Shown once the teacher has used up today's submissions -->
+  <div class="redemption-limit-panel" id="redemptionLimitPanel" style="display:none;">
+    <div class="redemption-limit-icon">✅</div>
+    <div class="redemption-limit-text">Kesempatan memberi poin anda sudah habis</div>
+    <div class="redemption-limit-sub" id="redemptionLimitSub">-</div>
   </div>
-  <div class="redemption-search-wrap">
-  <input
-    type="text"
-    id="redemptionSearch"
-    class="redemption-search"
-    placeholder="Cari nama siswa..."
-    autocomplete="off"
-  />
-</div>
-  <div class="redemption-list" id="redemptionStudentList"></div>
+
+  <!-- Search + on-demand detail, shown while the teacher can still submit -->
+  <div class="redemption-search-area" id="redemptionSearchArea" style="display:none;">
+    <div class="redemption-hero">
+      <div class="redemption-hero-icon">⭐</div>
+      <div class="redemption-hero-title">Beri Poin Penebusan</div>
+      <div class="redemption-hero-sub" id="redemptionHeroSub">Cari nama siswa untuk memberi nilai</div>
+    </div>
+
+    <div class="redemption-search-wrap">
+      <input
+        type="text"
+        id="redemptionSearch"
+        class="redemption-search"
+        placeholder="Cari nama siswa..."
+        autocomplete="off"
+      />
+      <div class="redemption-suggestions" id="redemptionSuggestions"></div>
+    </div>
+
+    <div class="redemption-body">
+      <div class="redemption-empty" id="redemptionEmpty">
+        <div class="redemption-empty-icon">🔍</div>
+        <div class="redemption-empty-text">Ketik nama siswa di atas untuk mulai</div>
+      </div>
+
+      <div class="redemption-detail" id="redemptionDetail" style="display:none;"></div>
+    </div>
+  </div>
 </div>
 
 <!-- ===== REDEMPTION: MODAL ===== -->
