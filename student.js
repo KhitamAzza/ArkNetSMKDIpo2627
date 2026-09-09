@@ -208,18 +208,21 @@ async function getStudentRegistrationStatus(studentId) {
   const rejected = rows.filter(r => r.status === 'rejected');
   const expelled = rows.find(r => r.status === 'expelled');
 
-  // Expelled overrides everything
-  if (expelled) {
-    return { status: 'expelled', ekstra: expelled.ekstra, message: `Kamu dikeluarkan dari ${expelled.ekstra}`,alasan: expelled.alasan };
-  }
-
-  // If Database says they have an ekstra → they are accepted
+  // If Database says they have an ekstra → they are currently accepted.
+  // This is source of truth #1 and must win over any past 'expelled' row,
+  // since re-admitting a student (setting Database.ekstra again) doesn't
+  // insert a new registration row to supersede an old expelled one.
   if (hasDbEkstra) {
     // If they also have a pending change request, show pending instead
     if (pending) {
       return { status: 'pending', ekstra: pending.ekstra, message: `Pendaftaran ke ${pending.ekstra} sedang diproses` };
     }
     return { status: 'accepted', ekstra: dbEkstra, message: `Kamu diterima di ${dbEkstra}` };
+  }
+
+  // No current ekstra in Database — only now does a past expulsion apply
+  if (expelled) {
+    return { status: 'expelled', ekstra: expelled.ekstra, message: `Kamu dikeluarkan dari ${expelled.ekstra}`, alasan: expelled.alasan };
   }
 
   // No ekstra in Database — rely on registration history
