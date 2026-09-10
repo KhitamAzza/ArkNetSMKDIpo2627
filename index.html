@@ -600,19 +600,33 @@
     <div class="header-greeting" id="redemptionHeaderName">-</div>
     <div style="width:40px;"></div>
   </div>
-  <div class="redemption-banner" id="redemptionBanner" style="display:none;">
-    ✅ Anda sudah memberi nilai hari ini
+
+  <div id="redemptionLimitPanel" class="redemption-limit-panel" style="display:none;">
+    <div class="redemption-limit-icon">✅</div>
+    <div class="redemption-limit-title">Kesempatan hari ini sudah habis</div>
+    <div id="redemptionLimitSub" class="redemption-limit-sub">-</div>
   </div>
-  <div class="redemption-search-wrap">
-  <input
-    type="text"
-    id="redemptionSearch"
-    class="redemption-search"
-    placeholder="Cari nama siswa..."
-    autocomplete="off"
-  />
-</div>
-  <div class="redemption-list" id="redemptionStudentList"></div>
+
+  <div id="redemptionSearchArea" class="redemption-search-area" style="display:none;">
+    <div id="redemptionHeroSub" class="redemption-hero-sub">-</div>
+
+    <div class="redemption-search-wrap">
+      <input
+        type="text"
+        id="redemptionSearch"
+        class="redemption-search"
+        placeholder="Cari nama siswa..."
+        autocomplete="off"
+      />
+      <div id="redemptionSuggestions" class="redemption-suggestions" style="display:none;"></div>
+    </div>
+
+    <div id="redemptionEmpty" class="redemption-empty" style="display:flex;">
+      <div class="redemption-empty-text">Cari nama siswa untuk mulai</div>
+    </div>
+
+    <div id="redemptionDetail" style="display:none;"></div>
+  </div>
 </div>
 
 <!-- ===== REDEMPTION: MODAL ===== -->

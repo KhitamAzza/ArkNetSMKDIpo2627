@@ -26,6 +26,7 @@ function getJakartaDayBoundsUTC() {
 // only once a name is actually picked.
 let redemptionStudentIndex = [];
 let redemptionLimitReached = false;
+let redemptionModalMaxPoint = 1; // per-student cap: never lets a submit push the score past 0
 
 // ============================================
 // REDEMPTION: LOGIN
@@ -169,37 +170,46 @@ document.addEventListener("click", (e) => {
 // ============================================
 // REDEMPTION: PER-STUDENT LOOKUP (fetched only once a name is picked)
 // ============================================
+// Computes a student's current point balance fresh from Supabase. Shared by
+// selectRedemptionStudent (initial load) and submitRedemption (race-condition
+// re-check right before inserting), so the two never drift out of sync.
+async function computeStudentPoint(studentId) {
+  const [{ data: attRows, error: attErr }, { data: reds, error: redErr }] = await Promise.all([
+    sb.from('AttendanceV2').select('date, status').eq('student_id', studentId).eq('semester', currentSemester),
+    sb.from('Redemptions').select('poin').eq('student_id', studentId).eq('semester', currentSemester)
+  ]);
+  if (attErr) throw attErr;
+  if (redErr) throw redErr;
+
+  const byDate = {};
+  (attRows || []).forEach(r => {
+    if (!byDate[r.date]) byDate[r.date] = [];
+    byDate[r.date].push(r);
+  });
+  const stats = { HADIR: 0, ALPHA: 0, TERLAMBAT: 0, PAGI: 0, TELAT: 0 };
+  Object.values(byDate).forEach(rows => {
+    const st = (deriveStatus(rows) || "-").toUpperCase();
+    if (stats[st] !== undefined) stats[st]++;
+  });
+
+  const minusAlpha = appConfig?.nilai_minus_alpha ?? -10;
+  const minusLate  = appConfig?.nilai_minus_terlambat ?? -5;
+  const alphaCount = stats.ALPHA;
+  const lateCount  = stats.TERLAMBAT + stats.TELAT + stats.PAGI; // PAGI counts as late, same as student/teacher dashboards
+  const totalMinus = (alphaCount * minusAlpha) + (lateCount * minusLate);
+  const redemptionTotal = (reds || []).reduce((sum, r) => sum + (r.poin || 0), 0);
+  const point = totalMinus + redemptionTotal;
+
+  return { point, hadir: stats.HADIR, alpha: alphaCount, late: lateCount };
+}
+
 async function selectRedemptionStudent(student) {
   redemptionSearch.value = student.nama;
   redemptionSuggestions.style.display = "none";
   showStudentLoading(true);
 
   try {
-    const [{ data: attRows, error: attErr }, { data: reds, error: redErr }] = await Promise.all([
-      sb.from('AttendanceV2').select('date, status').eq('student_id', student.id).eq('semester', currentSemester),
-      sb.from('Redemptions').select('poin').eq('student_id', student.id).eq('semester', currentSemester)
-    ]);
-    if (attErr) throw attErr;
-    if (redErr) throw redErr;
-
-    const byDate = {};
-    (attRows || []).forEach(r => {
-      if (!byDate[r.date]) byDate[r.date] = [];
-      byDate[r.date].push(r);
-    });
-    const stats = { HADIR: 0, ALPHA: 0, TERLAMBAT: 0, PAGI: 0, TELAT: 0 };
-    Object.values(byDate).forEach(rows => {
-      const st = (deriveStatus(rows) || "-").toUpperCase();
-      if (stats[st] !== undefined) stats[st]++;
-    });
-
-    const minusAlpha = appConfig?.nilai_minus_alpha ?? -10;
-    const minusLate  = appConfig?.nilai_minus_terlambat ?? -5;
-    const alphaCount = stats.ALPHA;
-    const lateCount  = stats.TERLAMBAT + stats.TELAT + stats.PAGI; // PAGI counts as late, same as student/teacher dashboards
-    const totalMinus = (alphaCount * minusAlpha) + (lateCount * minusLate);
-    const redemptionTotal = (reds || []).reduce((sum, r) => sum + (r.poin || 0), 0);
-    const point = totalMinus + redemptionTotal;
+    const { point, hadir, alpha, late } = await computeStudentPoint(student.id);
 
     selectedRedemptionStudent = { id: student.id, nama: student.nama, kelas: student.kelas, point };
 
@@ -208,9 +218,9 @@ async function selectRedemptionStudent(student) {
       nama: student.nama,
       kelas: student.kelas,
       ekstra: student.ekstra,
-      hadir: stats.HADIR,
-      alpha: alphaCount,
-      late: lateCount,
+      hadir,
+      alpha,
+      late,
       point
     });
   } catch (err) {
@@ -275,13 +285,21 @@ function openRedemptionModal(studentId, nama, kelas, point) {
     showStudentToast("Kesempatan memberi poin anda sudah habis", "info");
     return;
   }
+  if (point >= 0) {
+    showStudentToast("Siswa ini tidak memiliki minus poin", "info");
+    return;
+  }
 
   selectedRedemptionStudent = { id: studentId, nama, kelas, point };
   redemptionModalName.textContent = nama;
   redemptionModalClass.textContent = kelas + " • " + point + " poin";
 
   const cfg = getRedemptionConfig();
-  const maxVal = cfg.maxPoint;
+  // Never let a teacher push a student's score past 0 — cap the slider at
+  // however much minus the student actually has left, or the configured
+  // max, whichever is smaller.
+  redemptionModalMaxPoint = Math.min(cfg.maxPoint, Math.abs(point));
+  const maxVal = redemptionModalMaxPoint;
   redemptionSlider.max = maxVal;
   redemptionSlider.value = Math.min(3, maxVal);
 
@@ -300,7 +318,7 @@ function closeRedemptionModal() {
 function renderSliderMarks() {
   const container = document.querySelector(".redemption-slider-marks");
   if (!container) return;
-  const maxVal = getRedemptionConfig().maxPoint;
+  const maxVal = redemptionModalMaxPoint;
   container.innerHTML = "";
   for (let i = 1; i <= maxVal; i++) {
     const span = document.createElement("span");
@@ -316,8 +334,7 @@ const REDEMPTION_PALETTE = [
 
 function updateSliderLabel() {
   const val = Number(redemptionSlider.value);
-  const cfg = getRedemptionConfig();
-  const maxVal = cfg.maxPoint;
+  const maxVal = redemptionModalMaxPoint;
 
   const activeColors = REDEMPTION_PALETTE.slice(0, maxVal);
   const color = activeColors[val - 1] || REDEMPTION_PALETTE[0];
@@ -360,13 +377,29 @@ async function submitRedemption() {
   showStudentLoading(true);
 
   try {
-    // Race condition guard: re-check the limit right before inserting.
+    // Race condition guard: re-check both the daily submit limit and the
+    // student's current minus balance right before inserting — either could
+    // have changed since the modal was opened (e.g. another teacher just
+    // gave this student points too).
     const status = await checkTeacherSubmissionStatus();
     if (status.reached) {
       showStudentToast("Batas pengiriman hari ini sudah tercapai", "error");
       closeRedemptionModal();
       redemptionLimitReached = true;
       await initRedemptionSession();
+      return;
+    }
+
+    const { point: freshPoint } = await computeStudentPoint(selectedRedemptionStudent.id);
+    if (freshPoint >= 0) {
+      showStudentToast("Siswa ini sudah tidak memiliki minus poin", "error");
+      closeRedemptionModal();
+      return;
+    }
+    if (poin > Math.abs(freshPoint)) {
+      showStudentToast(`Poin melebihi sisa minus siswa (maks ${Math.abs(freshPoint)})`, "error");
+      redemptionSubmitBtn.disabled = false;
+      showStudentLoading(false);
       return;
     }
 
