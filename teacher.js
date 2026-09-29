@@ -31,6 +31,8 @@ function guruLogout() {
 }
 
 guruPassword.addEventListener("input", () => {
+  // Ignore autofill/password-manager fills while the login screen is hidden
+  if (guruLoginScreen.style.display !== "flex") return;
   const input = guruPassword.value.trim();
   if (TEACHERS.find(t => t.password === input)) {
     doGuruLogin();
