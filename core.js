@@ -35,7 +35,7 @@ const TEACHERS = [
 const STAFF = [
   { nama: "Pak Teguh", password: "staffteguh" },
   { nama: "Bu Rina", password: "staffrina" },
-  { nama: "Masduki Zen", password: "Masduki Zen" }
+  { nama: "Masduki Zen", password: "wakezen" }
 ];
 
 function findStaffByPassword(password) {
