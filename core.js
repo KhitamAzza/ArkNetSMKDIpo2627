@@ -206,10 +206,57 @@ function getDefaultConfig() {
     denda_terlambat: 0,
     nilai_minus_alpha: -10,
     nilai_minus_terlambat: -5,
+    denda_pagi: 0,
+    nilai_minus_pagi: 0,
     max_point_submit: 1,
     max_redemption_point: 5,
     current_semester: 'STS (Ganjil)'
   };
+}
+
+// ===== PENALTY RULES (shared) =====
+// One place for the denda / minus-point formula so every screen agrees.
+// cfg = raw Config row (snake_case), same as appConfig.
+// PAGI and TERLAMBAT/TELAT each have their own denda + minus value.
+function getPenaltyRates(cfg) {
+  const c = cfg || appConfig || {};
+  return {
+    dendaAlpha:     c.denda_alpha ?? 0,
+    dendaTerlambat: c.denda_terlambat ?? 0,
+    dendaPagi:      c.denda_pagi ?? 0,
+    minusAlpha:     c.nilai_minus_alpha ?? -10,
+    minusTerlambat: c.nilai_minus_terlambat ?? -5,
+    minusPagi:      c.nilai_minus_pagi ?? 0
+  };
+}
+
+// counts = { alpha, terlambat (TERLAMBAT+TELAT), pagi }
+// Returns { debt, minus } from attendance only. Manual penalties
+// (PoinManual) and redemptions are added by the caller.
+function computePenalty(counts, cfg) {
+  const r = getPenaltyRates(cfg);
+  const a = counts.alpha || 0, t = counts.terlambat || 0, p = counts.pagi || 0;
+  return {
+    debt:  (a * r.dendaAlpha) + (t * r.dendaTerlambat) + (p * r.dendaPagi),
+    minus: (a * r.minusAlpha) + (t * r.minusTerlambat) + (p * r.minusPagi)
+  };
+}
+
+// Sum of manual minus points (stored negative, cancelled rows excluded).
+async function loadManualPoinTotal(studentId) {
+  try {
+    const { data, error } = await sb
+      .from('PoinManual')
+      .select('poin')
+      .eq('student_id', studentId)
+      .eq('semester', currentSemester)
+      .eq('dibatalkan', false);
+    if (error) throw error;
+    return (data || []).reduce((sum, r) => sum + (r.poin || 0), 0);
+  } catch (e) {
+    console.error("PoinManual load failed:", e);
+    return 0;
+  }
 }
 
 // ===== DATE HELPER (shared) =====

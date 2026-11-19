@@ -174,12 +174,14 @@ document.addEventListener("click", (e) => {
 // selectRedemptionStudent (initial load) and submitRedemption (race-condition
 // re-check right before inserting), so the two never drift out of sync.
 async function computeStudentPoint(studentId) {
-  const [{ data: attRows, error: attErr }, { data: reds, error: redErr }] = await Promise.all([
+  const [{ data: attRows, error: attErr }, { data: reds, error: redErr }, { data: manual, error: manErr }] = await Promise.all([
     sb.from('AttendanceV2').select('date, status').eq('student_id', studentId).eq('semester', currentSemester),
-    sb.from('Redemptions').select('poin').eq('student_id', studentId).eq('semester', currentSemester)
+    sb.from('Redemptions').select('poin').eq('student_id', studentId).eq('semester', currentSemester),
+    sb.from('PoinManual').select('poin').eq('student_id', studentId).eq('semester', currentSemester).eq('dibatalkan', false)
   ]);
   if (attErr) throw attErr;
   if (redErr) throw redErr;
+  if (manErr) throw manErr;
 
   const byDate = {};
   (attRows || []).forEach(r => {
@@ -192,15 +194,17 @@ async function computeStudentPoint(studentId) {
     if (stats[st] !== undefined) stats[st]++;
   });
 
-  const minusAlpha = appConfig?.nilai_minus_alpha ?? -10;
-  const minusLate  = appConfig?.nilai_minus_terlambat ?? -5;
+  // Same shared formula as the dashboards (core.js): PAGI and TERLAMBAT/TELAT
+  // have their own minus values, plus manual penalties from admin/tatib.
   const alphaCount = stats.ALPHA;
-  const lateCount  = stats.TERLAMBAT + stats.TELAT + stats.PAGI; // PAGI counts as late, same as student/teacher dashboards
-  const totalMinus = (alphaCount * minusAlpha) + (lateCount * minusLate);
+  const lateCount  = stats.TERLAMBAT + stats.TELAT;
+  const pagiCount  = stats.PAGI;
+  const penalty    = computePenalty({ alpha: alphaCount, terlambat: lateCount, pagi: pagiCount });
+  const manualPoin = (manual || []).reduce((sum, r) => sum + (r.poin || 0), 0);
   const redemptionTotal = (reds || []).reduce((sum, r) => sum + (r.poin || 0), 0);
-  const point = totalMinus + redemptionTotal;
+  const point = penalty.minus + manualPoin + redemptionTotal;
 
-  return { point, hadir: stats.HADIR, alpha: alphaCount, late: lateCount };
+  return { point, hadir: stats.HADIR, alpha: alphaCount, late: lateCount, pagi: pagiCount, manual: manualPoin };
 }
 
 async function selectRedemptionStudent(student) {
@@ -209,7 +213,7 @@ async function selectRedemptionStudent(student) {
   showStudentLoading(true);
 
   try {
-    const { point, hadir, alpha, late } = await computeStudentPoint(student.id);
+    const { point, hadir, alpha, late, pagi, manual } = await computeStudentPoint(student.id);
 
     selectedRedemptionStudent = { id: student.id, nama: student.nama, kelas: student.kelas, point };
 
@@ -221,6 +225,8 @@ async function selectRedemptionStudent(student) {
       hadir,
       alpha,
       late,
+      pagi,
+      manual,
       point
     });
   } catch (err) {
@@ -257,6 +263,11 @@ function renderRedemptionDetail(d) {
           <div class="redemption-stat-label">Terlambat</div>
         </div>
       </div>
+      ${(d.pagi > 0 || d.manual < 0) ? `
+      <div style="display:flex;justify-content:center;gap:16px;margin:-4px 0 14px;font-size:13px;color:var(--text-secondary);">
+        ${d.pagi > 0 ? `<span>Pagi: <b style="color:var(--yellow);">${d.pagi}x</b></span>` : ""}
+        ${d.manual < 0 ? `<span>Minus manual: <b style="color:var(--red);">${d.manual}</b></span>` : ""}
+      </div>` : ""}
 
       <div class="redemption-detail-point ${isMinus ? "is-minus" : ""}">
         <div class="redemption-detail-point-val">${d.point}</div>

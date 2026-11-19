@@ -115,10 +115,9 @@ async function loadStudentDashboard() {
     // --- RULE ENGINE: DEBT ---
     const alphaCount   = stats.ALPHA || 0;
     const pagiCount    = stats.PAGI || 0;
-    const lateCount    = (stats.TERLAMBAT || 0) + (stats.TELAT || 0) + pagiCount;
-    const dendaAlpha   = appConfig?.denda_alpha || 0;
-    const dendaLate    = appConfig?.denda_terlambat || 0;
-    const totalDebt    = (alphaCount * dendaAlpha) + (lateCount * dendaLate);
+    const terlambatCount = (stats.TERLAMBAT || 0) + (stats.TELAT || 0);
+    const penalty      = computePenalty({ alpha: alphaCount, terlambat: terlambatCount, pagi: pagiCount });
+    const totalDebt    = penalty.debt;
 
     // --- FETCH PAYMENTS from bayardenda ---
     let paid = 0;
@@ -137,9 +136,9 @@ async function loadStudentDashboard() {
     const sisa = totalDebt - paid;
 
     // --- RULE ENGINE: MINUS POINT ---
-    const minusAlpha   = appConfig?.nilai_minus_alpha ?? -10;
-    const minusLate    = appConfig?.nilai_minus_terlambat ?? -5;
-    const totalMinus   = (alphaCount * minusAlpha) + (lateCount * minusLate);
+    // Attendance-based minus + manual penalties from admin/tatib (PoinManual)
+    const manualPoin   = await loadManualPoinTotal(currentStudent.id);
+    const totalMinus   = penalty.minus + manualPoin;
 
     // --- LOAD REDEMPTIONS ---
     let redemptionTotal = 0;
@@ -160,7 +159,7 @@ async function loadStudentDashboard() {
       sisa: sisa,
       total: totalDebt,
       paid: paid,
-      counts: { alpha: alphaCount, terlambat: (stats.TERLAMBAT || 0) + (stats.TELAT || 0), pagi: pagiCount },
+      counts: { alpha: alphaCount, terlambat: terlambatCount, pagi: pagiCount },
       history: paymentHistory
     };
 
@@ -173,6 +172,7 @@ async function loadStudentDashboard() {
       syarat: currentStudent.syarat_khusus || "BELUM",
       debt: debt,
       minusPoint: totalMinus,
+      manualPoin: manualPoin,
       redemptionTotal: redemptionTotal,
       sisaPoin: netPoint,
       isPointValid: isPointValid,
@@ -677,19 +677,17 @@ async function showDendaSaya() {
       .order('created_at', { ascending: false });
     if (payErr) throw payErr;
 
-    const cfg = appConfig || {};
-    const dendaAlpha = cfg.denda_alpha || 0;
-    const dendaLate  = cfg.denda_terlambat || 0;
-
     let alphaCount = 0;
-    let lateCount  = 0;
+    let lateCount  = 0;   // TERLAMBAT + TELAT
+    let pagiCount  = 0;
     (rows || []).forEach(r => {
       const st = (r.status || '').trim().toUpperCase();
       if (st === 'ALPHA') alphaCount++;
+      else if (st === 'PAGI') pagiCount++;
       else lateCount++;
     });
 
-    const total = (alphaCount * dendaAlpha) + (lateCount * dendaLate);
+    const total = computePenalty({ alpha: alphaCount, terlambat: lateCount, pagi: pagiCount }).debt;
     const paid  = (pays || []).reduce((s, p) => s + (p.amount || 0), 0);
     const sisa  = total - paid;
 
@@ -873,7 +871,20 @@ async function showPointDetail() {
   };
   renderPointDetail(pointData);
 
-  // Load redemption history if table exists
+  // Load redemption history + manual minus history (what's behind the numbers)
+  let manualRows = [];
+  try {
+    const { data } = await sb
+      .from('PoinManual')
+      .select('poin, alasan, diinput_oleh, created_at')
+      .eq('student_id', currentStudent.id)
+      .eq('semester', currentSemester)
+      .eq('dibatalkan', false)
+      .order('created_at', { ascending: false });
+    manualRows = data || [];
+  } catch (e) { manualRows = []; }
+  renderPointBreakdown(pointData, manualRows);
+
   try {
     const { data: reds } = await sb
       .from('Redemptions')
@@ -900,6 +911,74 @@ function renderPointDetail(data) {
     netValue.textContent = sisa > 0 ? "+" + sisa : String(sisa);
     netValue.className = sisa < 0 ? "point-net-minus" : (sisa > 0 ? "point-net-plus" : "");
   }
+}
+
+function escHtml(v) {
+  return String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+// Explains where the minus points come from: per-status lines, manual
+// penalties (with reason + who gave them), and redemptions.
+function renderPointBreakdown(data, manualRows) {
+  const history = document.getElementById("pointDetailHistory");
+  if (!history) return;
+  let box = document.getElementById("pointBreakdown");
+  if (!box) {
+    box = document.createElement("div");
+    box.id = "pointBreakdown";
+    history.parentNode.insertBefore(box, history);
+  }
+
+  const rates  = getPenaltyRates();
+  const counts = (data.debt && data.debt.counts) || { alpha: 0, terlambat: 0, pagi: 0 };
+  const manualTotal = manualRows.reduce((sum, r) => sum + (r.poin || 0), 0);
+
+  const lines = [];
+  const addLine = (label, count, rate) => {
+    if (!count) return;
+    lines.push({ label: `${label} ${count}x (${rate} / kali)`, value: count * rate });
+  };
+  addLine("Alpha", counts.alpha, rates.minusAlpha);
+  addLine("Terlambat", counts.terlambat, rates.minusTerlambat);
+  addLine("Pagi", counts.pagi, rates.minusPagi);
+  if (manualTotal !== 0) lines.push({ label: "Minus manual (admin / tatib)", value: manualTotal });
+  if (data.redemptionTotal) lines.push({ label: "Penebusan poin", value: data.redemptionTotal });
+
+  const fmt = (n) => (n > 0 ? "+" + n : String(n));
+  const rowStyle = "display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--border);font-size:14px;";
+  const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "-";
+
+  const linesHtml = lines.length === 0
+    ? `<div style="padding:8px 0;color:var(--text-secondary);font-size:14px;">Belum ada pengurangan poin</div>`
+    : lines.map(l => `
+        <div style="${rowStyle}">
+          <span>${escHtml(l.label)}</span>
+          <b style="color:${l.value < 0 ? "var(--red)" : "var(--green)"};">${fmt(l.value)}</b>
+        </div>`).join("");
+
+  const manualHtml = manualRows.length === 0 ? "" : `
+    <div class="denda-section-title" style="margin-top:16px;">Riwayat Minus Manual (${manualRows.length})</div>
+    ${manualRows.map(r => `
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-top:8px;">
+        <div style="display:flex;justify-content:space-between;gap:12px;">
+          <b style="color:var(--red);">${r.poin} poin</b>
+          <span style="font-size:12px;color:var(--text-secondary);">${fmtDate(r.created_at)}</span>
+        </div>
+        <div style="font-size:14px;margin-top:4px;">${escHtml(r.alasan)}</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Diberikan oleh ${escHtml(r.diinput_oleh || "-")}</div>
+      </div>`).join("")}`;
+
+  box.innerHTML = `
+    <div class="denda-section-title" style="margin-top:16px;">Rincian Poin</div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:4px 16px 8px;margin-top:8px;">
+      ${linesHtml}
+      <div style="${rowStyle}font-weight:700;">
+        <span>Sisa poin</span>
+        <span>${fmt(data.sisaPoin || 0)}</span>
+      </div>
+    </div>
+    ${manualHtml}
+  `;
 }
 
 function renderPointHistory(redemptions) {

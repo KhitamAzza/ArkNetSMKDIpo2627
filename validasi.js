@@ -200,33 +200,33 @@ async function fetchAndComputeValidasi({ ids }) {
     { data: attendance, error: attErr },
     { data: registrations, error: regErr },
     { data: redemptions, error: redErr },
-    { data: payments, error: payErr }
+    { data: payments, error: payErr },
+    { data: manualRows, error: manErr }
   ] = await Promise.all([
     sb.from('AttendanceV2').select('student_id, status, date').eq('semester', currentSemester).in('student_id', ids),
     sb.from('registrations').select('student_id, status, ekstra, created_at').in('student_id', ids),
     sb.from('Redemptions').select('student_id, poin').eq('semester', currentSemester).in('student_id', ids),
-    sb.from('bayardenda').select('student_id, amount').eq('semester', currentSemester).in('student_id', ids)
+    sb.from('bayardenda').select('student_id, amount').eq('semester', currentSemester).in('student_id', ids),
+    sb.from('PoinManual').select('student_id, poin').eq('semester', currentSemester).eq('dibatalkan', false).in('student_id', ids)
   ]);
   if (attErr) console.error("Validasi lookup: attendance query failed", attErr);
   if (regErr) console.error("Validasi lookup: registrations query failed", regErr);
   if (redErr) console.error("Validasi lookup: redemptions query failed", redErr);
   if (payErr) console.error("Validasi lookup: payments query failed", payErr);
+  if (manErr) console.error("Validasi lookup: PoinManual query failed", manErr);
 
-  return computeValidasiStudents(students || [], attendance || [], registrations || [], redemptions || [], payments || []);
+  return computeValidasiStudents(students || [], attendance || [], registrations || [], redemptions || [], payments || [], manualRows || []);
 }
 
-function computeValidasiStudents(students, attendance, registrations, redemptions, payments) {
+function computeValidasiStudents(students, attendance, registrations, redemptions, payments, manualRows = []) {
   const cfg = appConfig || {};
-  const dendaAlpha = cfg.denda_alpha ?? 0;
-  const dendaLate  = cfg.denda_terlambat ?? 0;
-  const minusAlpha = cfg.nilai_minus_alpha ?? -10;
-  const minusLate  = cfg.nilai_minus_terlambat ?? -5;
   const pointThreshold = cfg.minus_point_threshold ?? -30;
 
   const attByStudent = groupByKey(attendance, 'student_id');
   const regByStudent = groupByKey(registrations, 'student_id');
   const redByStudent = groupByKey(redemptions, 'student_id');
   const payByStudent = groupByKey(payments, 'student_id');
+  const manualByStudent = groupByKey(manualRows, 'student_id');
 
   return students.map(s => {
     const sAtt = attByStudent[s.id] || [];
@@ -246,12 +246,15 @@ function computeValidasiStudents(students, attendance, registrations, redemption
     });
 
     const alphaCount = stats.ALPHA;
-    const lateCount  = stats.TERLAMBAT + stats.TELAT + stats.PAGI;
-    const totalDebt  = (alphaCount * dendaAlpha) + (lateCount * dendaLate);
+    const terlambatCount = stats.TERLAMBAT + stats.TELAT;
+    const pagiCount  = stats.PAGI;
+    const penalty    = computePenalty({ alpha: alphaCount, terlambat: terlambatCount, pagi: pagiCount }, cfg);
+    const totalDebt  = penalty.debt;
     const paid       = sPay.reduce((sum, p) => sum + (p.amount || 0), 0);
     const sisa       = totalDebt - paid;
 
-    const totalMinus = (alphaCount * minusAlpha) + (lateCount * minusLate);
+    const manualPoin = (manualByStudent[s.id] || []).reduce((sum, m) => sum + (m.poin || 0), 0);
+    const totalMinus = penalty.minus + manualPoin;
     const redemptionTotal = sRed.reduce((sum, r) => sum + (r.poin || 0), 0);
     const netPoint = totalMinus + redemptionTotal;
 
@@ -287,9 +290,9 @@ function computeValidasiStudents(students, attendance, registrations, redemption
       ekstra: s.ekstra && s.ekstra !== '0' ? s.ekstra : null,
       regStatus,
       syaratOk: !hasSyaratIssue,
-      attendance: { hadir: stats.HADIR, alpha: alphaCount, terlambat: lateCount },
+      attendance: { hadir: stats.HADIR, alpha: alphaCount, terlambat: terlambatCount, pagi: pagiCount },
       denda: { total: totalDebt, paid, sisa },
-      poin: { net: netPoint, threshold: pointThreshold }
+      poin: { net: netPoint, threshold: pointThreshold, manual: manualPoin }
     };
   });
 }
@@ -383,6 +386,10 @@ function renderValidasiStudentDetailHtml(s) {
         <div class="validasi-detail-row">
           <span class="validasi-detail-label">Terlambat</span>
           <span class="validasi-detail-value ${s.attendance.terlambat > 0 ? "is-yellow" : ""}">${s.attendance.terlambat}x</span>
+        </div>
+        <div class="validasi-detail-row">
+          <span class="validasi-detail-label">Pagi</span>
+          <span class="validasi-detail-value ${s.attendance.pagi > 0 ? "is-yellow" : ""}">${s.attendance.pagi || 0}x</span>
         </div>
       </div>
 

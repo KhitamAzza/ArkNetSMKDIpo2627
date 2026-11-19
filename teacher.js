@@ -71,12 +71,15 @@ async function loadTeacherDashboard() {
       { data: attendance, error: attErr },
       { data: registrations, error: regErr },
       { data: redemptions, error: redErr },
-      { data: payments, error: payErr }
+      { data: payments, error: payErr },
+      { data: manualRows, error: manErr }
     ] = await Promise.all([
       sb.from('AttendanceV2').select('student_id, status, date').eq('semester', currentSemester).in('student_id', studentIds),
       sb.from('registrations').select('student_id, status, ekstra, alasan, created_at').in('student_id', studentIds).order('created_at', { ascending: false }),
       sb.from('Redemptions').select('student_id, poin, deskripsi, guru, created_at').eq('semester', currentSemester).in('student_id', studentIds),
-      sb.from('bayardenda').select('student_id, amount, submitter, created_at, note').eq('semester', currentSemester).in('student_id', studentIds).order('created_at', { ascending: false })
+      sb.from('bayardenda').select('student_id, amount, submitter, created_at, note').eq('semester', currentSemester).in('student_id', studentIds).order('created_at', { ascending: false }),
+      // Manual minus points from admin/tatib (stored negative, cancelled rows excluded)
+      sb.from('PoinManual').select('student_id, poin, alasan, diinput_oleh, created_at').eq('semester', currentSemester).eq('dibatalkan', false).in('student_id', studentIds).order('created_at', { ascending: false })
     ]);
 
     // Don't fail silently — a bad column/table name here used to just resolve
@@ -85,12 +88,9 @@ async function loadTeacherDashboard() {
     if (regErr) console.error("Teacher dashboard: registrations query failed", regErr);
     if (redErr) console.error("Teacher dashboard: redemptions query failed", redErr);
     if (payErr) console.error("Teacher dashboard: payments query failed", payErr);
+    if (manErr) console.error("Teacher dashboard: PoinManual query failed", manErr);
 
     const cfg = appConfig || {};
-    const dendaAlpha = cfg.denda_alpha ?? 0;
-    const dendaLate  = cfg.denda_terlambat ?? 0;
-    const minusAlpha = cfg.nilai_minus_alpha ?? -10;
-    const minusLate  = cfg.nilai_minus_terlambat ?? -5;
     const pointThreshold = cfg.minus_point_threshold ?? -30;
 
     // 3. Process each student
@@ -99,6 +99,7 @@ async function loadTeacherDashboard() {
       const sReg = (registrations || []).filter(r => r.student_id === s.id);
       const sRed = (redemptions || []).filter(r => r.student_id === s.id);
       const sPay = (payments || []).filter(p => p.student_id === s.id);
+      const sManual = (manualRows || []).filter(m => m.student_id === s.id);
 
       // Attendance stats
       const byDate = {};
@@ -121,12 +122,15 @@ async function loadTeacherDashboard() {
 
       // Debt & points
       const alphaCount = stats.ALPHA;
-      const lateCount  = stats.TERLAMBAT + stats.TELAT + stats.PAGI;
-      const totalDebt  = (alphaCount * dendaAlpha) + (lateCount * dendaLate);
+      const terlambatCount = stats.TERLAMBAT + stats.TELAT;
+      const pagiCount  = stats.PAGI;
+      const penalty    = computePenalty({ alpha: alphaCount, terlambat: terlambatCount, pagi: pagiCount }, cfg);
+      const totalDebt  = penalty.debt;
       const paid       = sPay.reduce((sum, p) => sum + (p.amount || 0), 0);
       const sisa       = totalDebt - paid;
 
-      const totalMinus = (alphaCount * minusAlpha) + (lateCount * minusLate);
+      const manualPoin = sManual.reduce((sum, m) => sum + (m.poin || 0), 0);
+      const totalMinus = penalty.minus + manualPoin;
       const redemptionTotal = sRed.reduce((sum, r) => sum + (r.poin || 0), 0);
       const netPoint = totalMinus + redemptionTotal;
 
@@ -176,6 +180,8 @@ async function loadTeacherDashboard() {
         sisa,
         payments: sPay,
         totalMinus,
+        manualPoin,
+        manualEntries: sManual,
         redemptionTotal,
         netPoint,
         regStatus,
